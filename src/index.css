@@ -5,8 +5,40 @@
 }
 
 @layer base {
-  .dark {
-    --background: 222.2 84% 4.9%;
-    --foreground: 210 40% 98%;
+  :root {
+    --background: #FAFAFA;
+    --foreground: #1e293b;
+    --card: #FFFFFF;
+    --card-foreground: #1e293b;
   }
+
+  .dark {
+    --background: #050505;
+    --foreground: #f8fafc;
+    --card: #0D0D0D;
+    --card-foreground: #f8fafc;
+  }
+}
+
+body {
+  background-color: var(--background);
+  color: var(--foreground);
+}
+
+.glass {
+  background: rgba(255, 255, 255, 0.7);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+}
+
+.dark .glass {
+  background: rgba(5, 5, 5, 0.7);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+}
+
+.infinite-card {
+  background-color: var(--card);
+  border: 0;
+  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
 }

@@ -1,12 +1,12 @@
-import { GoogleGenAI } from "@google/genai";
+import { GoogleGenAI, ThinkingLevel } from "@google/genai";
 
 const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY || "" });
 
 export async function getFinancialAdvice(transactions: any[], userMessage: string) {
-  const model = "gemini-3-flash-preview";
+  const model = "gemini-3.1-pro-preview";
   
   const context = `
-    You are a professional financial assistant for an app called SecretPay.
+    You are a professional financial assistant for an app called Expenso.
     The user has the following transaction history:
     ${JSON.stringify(transactions, null, 2)}
     
@@ -23,6 +23,9 @@ export async function getFinancialAdvice(transactions: any[], userMessage: strin
       contents: userMessage,
       config: {
         systemInstruction: context,
+        thinkingConfig: {
+          thinkingLevel: ThinkingLevel.HIGH
+        }
       },
     });
     return response.text;
