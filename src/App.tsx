@@ -17,7 +17,14 @@ import {
   Trash2,
   Search,
   Filter,
-  ChevronRight
+  ChevronRight,
+  Utensils,
+  Car,
+  ShoppingBag,
+  Receipt,
+  Bell,
+  ArrowUpRight,
+  ArrowDownLeft
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { 
@@ -40,13 +47,56 @@ import { firebaseService } from './services/firebaseService';
 import { getFinancialAdvice } from './services/aiService';
 import { cn } from './lib/utils';
 
+// --- Utils ---
+
+const triggerHaptic = (pattern: number | number[] = 10) => {
+  if (typeof window !== 'undefined' && window.navigator.vibrate) {
+    window.navigator.vibrate(pattern);
+  }
+};
+
 // --- Components ---
 
 const Card = ({ children, className }: { children: React.ReactNode; className?: string }) => (
-  <div className={cn("infinite-card rounded-[32px] p-6", className)}>
+  <div className={cn("infinite-card rounded-[24px] p-6", className)}>
     {children}
   </div>
 );
+
+const StickyHeader = ({ title }: { title?: string }) => {
+  return (
+    <div className="sticky top-0 z-50 w-full glass bg-[#050505]/80 backdrop-blur-xl border-b border-white/5 px-6 py-4 flex items-center justify-between">
+      <div className="flex items-center gap-2">
+        <div className="w-8 h-8 bg-gradient-to-br from-indigo-500 to-purple-600 rounded-lg flex items-center justify-center">
+          <Wallet size={18} className="text-white" />
+        </div>
+        <h1 className="text-xl font-bold tracking-tighter bg-gradient-to-br from-indigo-400 to-purple-500 bg-clip-text text-transparent">
+          Expenso
+        </h1>
+      </div>
+      <div className="flex items-center gap-4">
+        <button className="p-2 bg-white/5 rounded-full text-slate-400 hover:text-white transition-colors">
+          <Bell size={20} strokeWidth={1.5} />
+        </button>
+      </div>
+    </div>
+  );
+};
+
+const getCategoryConfig = (category: string) => {
+  switch (category) {
+    case 'Food':
+      return { icon: Utensils, color: "bg-orange-100 text-orange-600" };
+    case 'Transport':
+      return { icon: Car, color: "bg-blue-100 text-blue-600" };
+    case 'Shopping':
+      return { icon: ShoppingBag, color: "bg-purple-100 text-purple-600" };
+    case 'Bills':
+      return { icon: Receipt, color: "bg-rose-100 text-rose-600" };
+    default:
+      return { icon: Wallet, color: "bg-slate-100 text-slate-600" };
+  }
+};
 
 const Button = ({ 
   children, 
@@ -68,11 +118,6 @@ const Button = ({
     secondary: "bg-slate-100 hover:bg-slate-200 dark:bg-slate-900 dark:hover:bg-slate-800 text-slate-900 dark:text-slate-100",
     danger: "bg-rose-500 hover:bg-rose-600 text-white shadow-lg shadow-rose-500/20",
     ghost: "bg-transparent hover:bg-slate-100 dark:hover:bg-slate-900 text-slate-600 dark:text-slate-400"
-  };
-
-  const triggerHaptic = () => {
-    // Haptic feedback placeholder
-    if (window.navigator.vibrate) window.navigator.vibrate(10);
   };
 
   return (
@@ -212,106 +257,103 @@ const Dashboard = ({ transactions }: { transactions: any[] }) => {
   const expenses = transactions.filter(t => t.type === 'expense').reduce((acc, t) => acc + t.amount, 0);
   const balance = income - expenses;
 
-  const [scrollY, setScrollY] = useState(0);
+  const categoryTotals = transactions
+    .filter(t => t.type === 'expense')
+    .reduce((acc: any, t) => {
+      acc[t.category] = (acc[t.category] || 0) + t.amount;
+      return acc;
+    }, {});
 
-  useEffect(() => {
-    const handleScroll = () => setScrollY(window.scrollY);
-    window.addEventListener('scroll', handleScroll);
-    return () => window.removeEventListener('scroll', handleScroll);
-  }, []);
-
-  const headerOpacity = Math.min(1, scrollY / 100);
-  const balanceScale = Math.max(0.7, 1 - scrollY / 500);
+  const topCategories = Object.entries(categoryTotals)
+    .sort((a: any, b: any) => b[1] - a[1])
+    .slice(0, 5);
 
   return (
-    <div className="space-y-10 pb-32">
-      {/* Dynamic Header */}
-      <div className={cn(
-        "fixed top-0 left-0 right-0 z-40 glass h-20 flex items-center justify-center transition-all duration-300",
-        headerOpacity > 0.1 ? "bg-white/80 dark:bg-black/80 backdrop-blur-[25px] opacity-100" : "opacity-0 pointer-events-none"
-      )}>
-        <h2 className="text-lg font-bold dark:text-white tracking-tight">${balance.toLocaleString()}</h2>
-      </div>
-
-      <div className="pt-10 flex flex-col items-center justify-center space-y-2">
-        <motion.div 
-          style={{ scale: balanceScale }}
-          className="text-center"
-        >
-          <p className="text-slate-500 dark:text-slate-400 text-sm font-medium uppercase tracking-widest">Total Balance</p>
-          <h2 className="text-6xl font-bold mt-2 dark:text-white tracking-tighter">${balance.toLocaleString()}</h2>
-        </motion.div>
+    <div className="space-y-8 pb-32">
+      <div className="flex flex-col items-center justify-center py-8 space-y-1">
+        <p className="text-slate-500 text-xs font-bold uppercase tracking-[0.2em]">Available Balance</p>
+        <h2 className="text-5xl font-bold dark:text-white tracking-tighter text-indigo-500">
+          ${balance.toLocaleString()}
+        </h2>
       </div>
 
       <div className="grid grid-cols-2 gap-4">
-        <Card className="relative overflow-hidden group rounded-[24px]">
-          <div className="absolute inset-0 opacity-10">
-            <ResponsiveContainer width="100%" height="100%">
-              <BarChart data={[4, 6, 5, 8, 7, 9, 10].map(v => ({ v }))}>
-                <Bar dataKey="v" fill="#10b981" />
-              </BarChart>
-            </ResponsiveContainer>
+        <Card className="bg-emerald-500/10 border border-emerald-500/20 p-5">
+          <div className="flex items-center gap-3 mb-4">
+            <div className="w-10 h-10 bg-emerald-500 rounded-2xl flex items-center justify-center text-white shadow-lg shadow-emerald-500/20">
+              <ArrowUpRight size={20} />
+            </div>
+            <p className="text-emerald-500/80 text-[10px] font-bold uppercase tracking-widest">Income</p>
           </div>
-          <div className="relative z-10">
-            <p className="text-slate-500 dark:text-slate-400 text-xs font-bold uppercase tracking-wider">Income</p>
-            <h2 className="text-2xl font-bold mt-1 text-emerald-500 tracking-tight">+${income.toLocaleString()}</h2>
-          </div>
+          <h2 className="text-2xl font-bold text-emerald-500 tracking-tight">+${income.toLocaleString()}</h2>
         </Card>
 
-        <Card className="relative overflow-hidden group rounded-[24px]">
-          <div className="absolute inset-0 opacity-10">
-            <ResponsiveContainer width="100%" height="100%">
-              <BarChart data={[10, 8, 9, 6, 7, 5, 4].map(v => ({ v }))}>
-                <Bar dataKey="v" fill="#f43f5e" />
-              </BarChart>
-            </ResponsiveContainer>
+        <Card className="bg-rose-500/10 border border-rose-500/20 p-5">
+          <div className="flex items-center gap-3 mb-4">
+            <div className="w-10 h-10 bg-rose-500 rounded-2xl flex items-center justify-center text-white shadow-lg shadow-rose-500/20">
+              <ArrowDownLeft size={20} />
+            </div>
+            <p className="text-rose-500/80 text-[10px] font-bold uppercase tracking-widest">Expenses</p>
           </div>
-          <div className="relative z-10">
-            <p className="text-slate-500 dark:text-slate-400 text-xs font-bold uppercase tracking-wider">Expenses</p>
-            <h2 className="text-2xl font-bold mt-1 text-rose-500 tracking-tight">-${expenses.toLocaleString()}</h2>
-          </div>
+          <h2 className="text-2xl font-bold text-rose-500 tracking-tight">-${expenses.toLocaleString()}</h2>
         </Card>
       </div>
 
       <div className="space-y-4">
-        <div className="flex justify-between items-center px-2">
-          <h3 className="text-xl font-bold dark:text-white tracking-tight">Recent Activity</h3>
-          <button className="text-indigo-500 text-sm font-bold uppercase tracking-widest">See All</button>
-        </div>
-        <div className="space-y-4">
-          {transactions.slice(0, 10).map((t) => (
-            <motion.div 
-              key={t.id} 
-              initial={{ opacity: 0, y: 10 }}
-              animate={{ opacity: 1, y: 0 }}
-              className="flex items-center justify-between p-4 rounded-[24px] bg-white dark:bg-slate-900 shadow-sm transition-all hover:scale-[1.02]"
-            >
-              <div className="flex items-center gap-4">
-                <div className={cn(
-                  "w-12 h-12 rounded-full flex items-center justify-center",
-                  t.category === 'Food' ? "bg-orange-100 text-orange-600" :
-                  t.category === 'Transport' ? "bg-blue-100 text-blue-600" :
-                  t.category === 'Shopping' ? "bg-purple-100 text-purple-600" :
-                  t.category === 'Bills' ? "bg-rose-100 text-rose-600" :
-                  "bg-slate-100 text-slate-600"
-                )}>
-                  {t.type === 'income' ? <TrendingUp size={22} strokeWidth={1.2} /> : <TrendingDown size={22} strokeWidth={1.2} />}
+        <h3 className="text-sm font-bold uppercase tracking-widest text-slate-500 px-2">Financial Pulse</h3>
+        <div className="flex gap-4 overflow-x-auto pb-4 -mx-4 px-4 no-scrollbar">
+          {topCategories.map(([category, amount]: any) => {
+            const config = getCategoryConfig(category);
+            return (
+              <Card key={category} className="min-w-[140px] p-4 flex flex-col items-center text-center space-y-3 bg-white dark:bg-slate-900/50">
+                <div className={cn("w-12 h-12 rounded-2xl flex items-center justify-center", config.color)}>
+                  <config.icon size={22} strokeWidth={1.2} />
                 </div>
                 <div>
-                  <p className="font-bold text-slate-900 dark:text-white">{t.category}</p>
-                  <p className="text-xs text-slate-500">{format(parseISO(t.date), 'EEEE, MMM dd')}</p>
+                  <p className="text-xs font-bold dark:text-white">{category}</p>
+                  <p className="text-[10px] text-slate-500 font-medium">${amount.toLocaleString()}</p>
                 </div>
-              </div>
-              <div className="text-right">
-                <p className={cn(
-                  "font-bold text-lg tracking-tight",
-                  t.type === 'income' ? "text-indigo-500" : "text-slate-900 dark:text-white"
-                )}>
-                  {t.type === 'income' ? '+' : ''}${t.amount.toLocaleString()}
-                </p>
-              </div>
-            </motion.div>
-          ))}
+              </Card>
+            );
+          })}
+        </div>
+      </div>
+
+      <div className="space-y-4">
+        <div className="flex justify-between items-center px-2">
+          <h3 className="text-sm font-bold uppercase tracking-widest text-slate-500">Latest</h3>
+          <button className="text-indigo-500 text-[10px] font-bold uppercase tracking-widest">View All</button>
+        </div>
+        <div className="space-y-3">
+          {transactions.slice(0, 2).map((t) => {
+            const config = getCategoryConfig(t.category);
+            return (
+              <motion.div 
+                key={t.id} 
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                className="flex items-center justify-between p-4 rounded-[24px] bg-white dark:bg-slate-900/50 border border-white/5 transition-all hover:scale-[1.01]"
+              >
+                <div className="flex items-center gap-4">
+                  <div className={cn("w-10 h-10 rounded-2xl flex items-center justify-center", config.color)}>
+                    <config.icon size={20} strokeWidth={1.2} />
+                  </div>
+                  <div>
+                    <p className="font-bold text-sm dark:text-white">{t.category}</p>
+                    <p className="text-[10px] text-slate-500">{format(parseISO(t.date), 'MMM dd')}</p>
+                  </div>
+                </div>
+                <div className="text-right">
+                  <p className={cn(
+                    "font-bold text-sm tracking-tight",
+                    t.type === 'income' ? "text-indigo-500" : "dark:text-white"
+                  )}>
+                    {t.type === 'income' ? '+' : ''}${t.amount.toLocaleString()}
+                  </p>
+                </div>
+              </motion.div>
+            );
+          })}
         </div>
       </div>
     </div>
@@ -321,13 +363,6 @@ const Dashboard = ({ transactions }: { transactions: any[] }) => {
 const HistoryPage = ({ transactions, onDelete }: { transactions: any[], onDelete: (id: string) => void }) => {
   const [search, setSearch] = useState('');
   const [filter, setFilter] = useState('all');
-  const [scrollY, setScrollY] = useState(0);
-
-  useEffect(() => {
-    const handleScroll = () => setScrollY(window.scrollY);
-    window.addEventListener('scroll', handleScroll);
-    return () => window.removeEventListener('scroll', handleScroll);
-  }, []);
 
   const filtered = transactions.filter(t => {
     const matchesSearch = t.category.toLowerCase().includes(search.toLowerCase()) || 
@@ -336,82 +371,91 @@ const HistoryPage = ({ transactions, onDelete }: { transactions: any[], onDelete
     return matchesSearch && matchesFilter;
   });
 
+  const grouped = filtered.reduce((acc: any, t) => {
+    const date = parseISO(t.date);
+    let group = format(date, 'MMMM yyyy');
+    const today = new Date();
+    const yesterday = new Date();
+    yesterday.setDate(today.getDate() - 1);
+
+    if (format(date, 'yyyy-MM-dd') === format(today, 'yyyy-MM-dd')) group = 'Today';
+    else if (format(date, 'yyyy-MM-dd') === format(yesterday, 'yyyy-MM-dd')) group = 'Yesterday';
+
+    if (!acc[group]) acc[group] = [];
+    acc[group].push(t);
+    return acc;
+  }, {});
+
   return (
-    <div className="space-y-8 pb-32">
-      <div className={cn(
-        "sticky top-0 z-30 -mx-6 px-6 py-6 transition-all duration-300",
-        scrollY > 20 ? "bg-white/80 dark:bg-black/80 backdrop-blur-[25px] shadow-sm" : "bg-transparent"
-      )}>
-        <div className="flex flex-col gap-6">
-          <h2 className="text-3xl font-bold dark:text-white tracking-tight">Activity</h2>
-          <div className="flex gap-3">
-            <div className="relative flex-1">
-              <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" size={18} strokeWidth={1.2} />
-              <input 
-                type="text" 
-                placeholder="Search transactions..." 
-                value={search}
-                onChange={(e) => setSearch(e.target.value)}
-                className="w-full pl-12 pr-4 py-4 bg-white dark:bg-slate-900 border-none rounded-[20px] outline-none focus:ring-2 focus:ring-indigo-500 dark:text-white shadow-sm"
-              />
-            </div>
-            <select 
-              value={filter}
-              onChange={(e) => setFilter(e.target.value)}
-              className="px-4 py-4 bg-white dark:bg-slate-900 border-none rounded-[20px] outline-none focus:ring-2 focus:ring-indigo-500 dark:text-white shadow-sm font-bold text-xs uppercase tracking-widest"
-            >
-              <option value="all">All</option>
-              <option value="income">Income</option>
-              <option value="expense">Expense</option>
-            </select>
+    <div className="space-y-6 pb-32">
+      <div className="flex flex-col gap-4">
+        <div className="flex gap-3">
+          <div className="relative flex-1">
+            <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" size={16} strokeWidth={1.5} />
+            <input 
+              type="text" 
+              placeholder="Search history..." 
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              className="w-full pl-10 pr-4 py-3 bg-white dark:bg-slate-900/50 border border-white/5 rounded-2xl outline-none focus:ring-2 focus:ring-indigo-500 dark:text-white shadow-sm text-sm"
+            />
           </div>
+          <select 
+            value={filter}
+            onChange={(e) => setFilter(e.target.value)}
+            className="px-3 py-3 bg-white dark:bg-slate-900/50 border border-white/5 rounded-2xl outline-none focus:ring-2 focus:ring-indigo-500 dark:text-white shadow-sm font-bold text-[10px] uppercase tracking-widest"
+          >
+            <option value="all">All</option>
+            <option value="income">Income</option>
+            <option value="expense">Expense</option>
+          </select>
         </div>
       </div>
 
-      <div className="space-y-4">
-        {filtered.map((t) => (
-          <Card key={t.id} className="p-4 flex items-center justify-between group rounded-[24px] transition-all hover:scale-[1.02]">
-            <div className="flex items-center gap-4">
-              <div className={cn(
-                "w-12 h-12 rounded-full flex items-center justify-center",
-                t.category === 'Food' ? "bg-orange-100 text-orange-600" :
-                t.category === 'Transport' ? "bg-blue-100 text-blue-600" :
-                t.category === 'Shopping' ? "bg-purple-100 text-purple-600" :
-                t.category === 'Bills' ? "bg-rose-100 text-rose-600" :
-                "bg-slate-100 text-slate-600"
-              )}>
-                {t.type === 'income' ? <TrendingUp size={22} strokeWidth={1.2} /> : <TrendingDown size={22} strokeWidth={1.2} />}
-              </div>
-              <div>
-                <p className="font-bold text-slate-900 dark:text-white">{t.category}</p>
-                <p className="text-xs text-slate-500">{format(parseISO(t.date), 'MMM dd, yyyy')}</p>
-              </div>
+      <div className="space-y-8">
+        {Object.entries(grouped).map(([group, items]: any) => (
+          <div key={group} className="space-y-3">
+            <h3 className="text-[10px] font-bold uppercase tracking-[0.3em] text-slate-500 px-2">{group}</h3>
+            <div className="space-y-2">
+              {items.map((t: any) => {
+                const config = getCategoryConfig(t.category);
+                return (
+                  <div key={t.id} className="flex items-center justify-between p-3 rounded-2xl bg-white dark:bg-slate-900/30 border border-white/5 transition-all hover:bg-white/5 group">
+                    <div className="flex items-center gap-3">
+                      <div className={cn("w-9 h-9 rounded-xl flex items-center justify-center", config.color)}>
+                        <config.icon size={18} strokeWidth={1.2} />
+                      </div>
+                      <div>
+                        <p className="font-bold text-xs dark:text-white">{t.category}</p>
+                        {t.description && <p className="text-[10px] text-slate-500 truncate max-w-[120px]">{t.description}</p>}
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-3">
+                      <p className={cn(
+                        "font-bold text-sm tracking-tight",
+                        t.type === 'income' ? "text-indigo-500" : "dark:text-white"
+                      )}>
+                        {t.type === 'income' ? '+' : ''}${t.amount.toLocaleString()}
+                      </p>
+                      <button 
+                        onClick={() => onDelete(t.id)}
+                        className="p-1.5 text-slate-600 hover:text-rose-500 opacity-0 group-hover:opacity-100 transition-all"
+                      >
+                        <Trash2 size={14} strokeWidth={1.5} />
+                      </button>
+                    </div>
+                  </div>
+                );
+              })}
             </div>
-            <div className="flex items-center gap-4">
-              <div className="text-right">
-                <p className={cn(
-                  "font-bold text-lg tracking-tight",
-                  t.type === 'income' ? "text-indigo-500" : "text-slate-900 dark:text-white"
-                )}>
-                  {t.type === 'income' ? '+' : ''}${t.amount.toLocaleString()}
-                </p>
-                {t.description && <p className="text-[10px] text-slate-400 uppercase tracking-widest">{t.description}</p>}
-              </div>
-              <button 
-                onClick={() => onDelete(t.id)}
-                className="p-2 text-slate-300 hover:text-rose-500 opacity-0 group-hover:opacity-100 transition-all"
-              >
-                <Trash2 size={18} strokeWidth={1.2} />
-              </button>
-            </div>
-          </Card>
+          </div>
         ))}
         {filtered.length === 0 && (
           <div className="py-20 text-center space-y-4">
-            <div className="w-20 h-20 bg-slate-100 dark:bg-slate-900 rounded-full flex items-center justify-center mx-auto text-slate-300">
-              <Search size={40} strokeWidth={1} />
+            <div className="w-16 h-16 bg-slate-900/50 rounded-full flex items-center justify-center mx-auto text-slate-700">
+              <Search size={32} strokeWidth={1} />
             </div>
-            <p className="text-slate-400 font-medium">No transactions found</p>
+            <p className="text-slate-500 text-xs font-medium">No records found</p>
           </div>
         )}
       </div>
@@ -648,6 +692,7 @@ const AiAssistant = ({ transactions, isOpen, onClose }: { transactions: any[], i
   const [input, setInput] = useState('');
   const [isTyping, setIsTyping] = useState(false);
   const scrollRef = useRef<HTMLDivElement>(null);
+  const inputRef = useRef<HTMLInputElement>(null);
 
   const scrollToBottom = () => {
     if (scrollRef.current) {
@@ -657,6 +702,12 @@ const AiAssistant = ({ transactions, isOpen, onClose }: { transactions: any[], i
       });
     }
   };
+
+  useEffect(() => {
+    if (isOpen) {
+      setTimeout(() => inputRef.current?.focus(), 300);
+    }
+  }, [isOpen]);
 
   useEffect(() => {
     scrollToBottom();
@@ -682,37 +733,45 @@ const AiAssistant = ({ transactions, isOpen, onClose }: { transactions: any[], i
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             onClick={onClose}
-            className="fixed inset-0 bg-black/40 backdrop-blur-sm z-50"
+            className="fixed inset-0 bg-black/60 backdrop-blur-md z-50"
           />
           <motion.div
             initial={{ y: "100%" }}
             animate={{ y: 0 }}
             exit={{ y: "100%" }}
             transition={{ type: "spring", damping: 25, stiffness: 200 }}
-            className="fixed bottom-0 left-0 right-0 h-[80vh] glass rounded-t-[40px] z-50 flex flex-col overflow-hidden shadow-2xl"
+            className="fixed bottom-0 left-0 right-0 h-[85vh] glass bg-[#050505]/95 rounded-t-[40px] z-50 flex flex-col overflow-hidden shadow-2xl border-t border-white/5"
           >
-            <div className="w-12 h-1.5 bg-slate-300 dark:bg-slate-700 rounded-full mx-auto mt-4 mb-2" />
-            <div className="px-6 py-4 flex justify-between items-center border-b border-slate-200 dark:border-slate-800">
-              <h2 className="text-xl font-bold dark:text-white">AI Assistant</h2>
-              <button onClick={onClose} className="p-2 bg-slate-100 dark:bg-slate-800 rounded-full">
-                <X size={20} strokeWidth={1.2} />
+            <div className="w-12 h-1.5 bg-slate-800 rounded-full mx-auto mt-4 mb-2" />
+            <div className="px-6 py-4 flex justify-between items-center border-b border-white/5">
+              <div className="flex items-center gap-2">
+                <div className="w-8 h-8 bg-indigo-600 rounded-lg flex items-center justify-center">
+                  <MessageSquare size={18} className="text-white" />
+                </div>
+                <h2 className="text-lg font-bold text-white tracking-tight">AI Assistant</h2>
+              </div>
+              <button onClick={onClose} className="p-2 bg-white/5 rounded-full text-slate-400">
+                <X size={20} strokeWidth={1.5} />
               </button>
             </div>
             
-            <div ref={scrollRef} className="flex-1 overflow-y-auto p-6 space-y-6">
+            <div ref={scrollRef} className="flex-1 overflow-y-auto p-6 space-y-6 no-scrollbar">
               {messages.map((msg, i) => (
                 <div key={i} className={cn("flex", msg.role === 'user' ? "justify-end" : "justify-start")}>
                   <div className={cn(
-                    "max-w-[85%] p-5 rounded-[28px]",
+                    "max-w-[85%] p-5 rounded-[28px] relative group",
                     msg.role === 'user' 
                       ? "bg-indigo-600 text-white rounded-tr-none" 
-                      : "bg-white dark:bg-slate-900 dark:text-slate-200 rounded-tl-none shadow-sm"
+                      : "bg-white/5 text-slate-200 rounded-tl-none border border-white/5"
                   )}>
+                    {msg.role === 'ai' && (
+                      <div className="absolute -left-2 -top-2 w-4 h-4 bg-indigo-500 rounded-full blur-lg opacity-0 group-hover:opacity-50 transition-opacity" />
+                    )}
                     <div className="prose prose-sm dark:prose-invert max-w-none">
                       {msg.role === 'ai' ? (
                         <TypewriterMarkdown content={msg.content} isLast={i === messages.length - 1} />
                       ) : (
-                        <p className="leading-relaxed">{msg.content}</p>
+                        <p className="leading-relaxed text-sm">{msg.content}</p>
                       )}
                     </div>
                   </div>
@@ -721,31 +780,36 @@ const AiAssistant = ({ transactions, isOpen, onClose }: { transactions: any[], i
               {isTyping && (
                 <div className="flex flex-col items-start gap-3">
                   <div className="relative">
-                    <div className="absolute inset-0 bg-indigo-500 rounded-full blur-xl animate-pulse opacity-50" />
-                    <div className="relative w-10 h-10 bg-indigo-600 rounded-full flex items-center justify-center text-white shadow-lg">
+                    <motion.div 
+                      animate={{ scale: [1, 1.2, 1], opacity: [0.3, 0.6, 0.3] }}
+                      transition={{ duration: 2, repeat: Infinity }}
+                      className="absolute inset-0 bg-indigo-500 rounded-full blur-xl" 
+                    />
+                    <div className="relative w-10 h-10 bg-indigo-600 rounded-full flex items-center justify-center text-white shadow-lg shadow-indigo-500/40">
                       <MessageSquare size={18} strokeWidth={1.2} className="animate-bounce" />
                     </div>
                   </div>
-                  <p className="text-xs font-bold text-indigo-500 uppercase tracking-widest animate-pulse">
-                    Expenso is analyzing your finances...
+                  <p className="text-[10px] font-bold text-indigo-500 uppercase tracking-[0.2em] animate-pulse">
+                    Expenso is thinking...
                   </p>
                 </div>
               )}
             </div>
 
-            <div className="p-6 pb-10 glass border-t border-slate-200 dark:border-slate-800">
+            <div className="p-6 pb-10 bg-[#050505] border-t border-white/5">
               <form onSubmit={(e) => { e.preventDefault(); handleSend(); }} className="flex gap-3">
                 <input 
+                  ref={inputRef}
                   type="text" 
                   value={input}
                   onChange={(e) => setInput(e.target.value)}
-                  placeholder="Ask Expenso..."
-                  className="flex-1 px-6 py-4 bg-white dark:bg-slate-800 border-none rounded-2xl outline-none focus:ring-2 focus:ring-indigo-500 dark:text-white shadow-inner"
+                  placeholder="Ask anything..."
+                  className="flex-1 px-6 py-4 bg-white/5 border border-white/10 rounded-2xl outline-none focus:ring-2 focus:ring-indigo-500 text-white shadow-inner text-sm"
                 />
                 <button 
                   type="submit" 
                   disabled={isTyping}
-                  className="w-14 h-14 bg-indigo-600 rounded-2xl flex items-center justify-center text-white shadow-lg shadow-indigo-500/30 active:scale-90 transition-transform"
+                  className="w-14 h-14 bg-indigo-600 rounded-2xl flex items-center justify-center text-white shadow-lg shadow-indigo-500/40 active:scale-90 transition-transform disabled:opacity-50"
                 >
                   <Send size={22} strokeWidth={1.2} />
                 </button>
@@ -799,7 +863,7 @@ const ProfilePage = () => {
               </div>
             </div>
             <button 
-              onClick={toggleTheme}
+              onClick={() => { triggerHaptic(15); toggleTheme(); }}
               className={cn(
                 "w-12 h-6 rounded-full transition-all relative",
                 theme === 'dark' ? "bg-indigo-600" : "bg-slate-200"
@@ -891,7 +955,7 @@ export default function App() {
       setAmount('');
       setDescription('');
       loadTransactions();
-      if (window.navigator.vibrate) window.navigator.vibrate([10, 50, 10]);
+      triggerHaptic([10, 50, 10]);
     } catch (err) {
       console.error(err);
     }
@@ -925,9 +989,11 @@ export default function App() {
   ];
 
   return (
-    <div className="min-h-screen bg-slate-50 dark:bg-slate-950 flex flex-col">
+    <div className="min-h-screen bg-[#FAFAFA] dark:bg-[#050505] flex flex-col">
+      <StickyHeader />
+      
       {/* Main Content */}
-      <main className="flex-1 max-w-2xl mx-auto w-full p-4 md:p-8">
+      <main className="flex-1 max-w-2xl mx-auto w-full p-6 md:p-8">
         <AnimatePresence mode="wait">
           <motion.div
             key={activeTab}
@@ -949,7 +1015,7 @@ export default function App() {
         whileHover={{ scale: 1.1 }}
         whileTap={{ scale: 0.9 }}
         onClick={() => setIsAiOpen(true)}
-        className="fixed bottom-28 right-6 w-14 h-14 bg-indigo-600 rounded-full flex items-center justify-center text-white shadow-2xl z-40"
+        className="fixed bottom-28 right-6 w-14 h-14 bg-indigo-600 rounded-2xl flex items-center justify-center text-white shadow-2xl shadow-indigo-500/40 z-40"
       >
         <MessageSquare size={24} strokeWidth={1.2} />
       </motion.button>
@@ -961,7 +1027,7 @@ export default function App() {
             <button
               key={tab.id}
               onClick={() => setIsAddModalOpen(true)}
-              className="w-16 h-16 -mt-12 bg-gradient-to-br from-indigo-500 to-blue-600 rounded-full flex items-center justify-center text-white shadow-xl shadow-indigo-500/50 active:scale-90 transition-transform"
+              className="w-16 h-16 -mt-12 bg-indigo-600 rounded-2xl flex items-center justify-center text-white shadow-xl shadow-indigo-500/40 active:scale-90 transition-transform"
             >
               <Plus size={32} strokeWidth={1.5} />
             </button>
