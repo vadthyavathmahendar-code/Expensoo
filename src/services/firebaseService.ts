@@ -7,18 +7,63 @@ import {
   orderBy, 
   deleteDoc, 
   doc,
+  setDoc,
+  getDoc,
+  updateDoc,
   Timestamp
 } from 'firebase/firestore';
 import { 
   signInWithEmailAndPassword, 
-  createUserWithEmailAndPassword 
+  createUserWithEmailAndPassword,
+  sendPasswordResetEmail,
+  updateProfile
 } from 'firebase/auth';
 import { db, auth } from '../lib/firebase';
 
 export const firebaseService = {
   // Auth
   login: (email: string, pass: string) => signInWithEmailAndPassword(auth, email, pass),
-  register: (email: string, pass: string) => createUserWithEmailAndPassword(auth, email, pass),
+  register: async (email: string, pass: string) => {
+    const userCredential = await createUserWithEmailAndPassword(auth, email, pass);
+    // Initialize user doc in Firestore
+    await setDoc(doc(db, 'users', userCredential.user.uid), {
+      email,
+      displayName: '',
+      phoneNumber: '',
+      bio: '',
+      avatar: '',
+      createdAt: Timestamp.now()
+    });
+    return userCredential;
+  },
+  resetPassword: (email: string) => sendPasswordResetEmail(auth, email),
+
+  updateUserProfile: async (userId: string, data: { displayName?: string, photoURL?: string, phoneNumber?: string, bio?: string, avatar?: string }) => {
+    const user = auth.currentUser;
+    if (user) {
+      if (data.displayName !== undefined || data.photoURL !== undefined) {
+        await updateProfile(user, {
+          displayName: data.displayName,
+          photoURL: data.photoURL
+        });
+      }
+    }
+
+    const userRef = doc(db, 'users', userId);
+    await updateDoc(userRef, {
+      ...data,
+      updatedAt: Timestamp.now()
+    });
+  },
+
+  getUserProfile: async (userId: string) => {
+    const userRef = doc(db, 'users', userId);
+    const userSnap = await getDoc(userRef);
+    if (userSnap.exists()) {
+      return userSnap.data();
+    }
+    return null;
+  },
 
   // Transactions
   getTransactions: async (userId: string) => {

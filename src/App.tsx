@@ -24,7 +24,25 @@ import {
   Receipt,
   Bell,
   ArrowUpRight,
-  ArrowDownLeft
+  ArrowDownLeft,
+  AlertCircle,
+  Zap,
+  Mail,
+  Lock,
+  Eye,
+  EyeOff,
+  CreditCard,
+  Settings as SettingsIcon,
+  Shield,
+  HelpCircle,
+  Globe,
+  DollarSign,
+  Brain,
+  Mic,
+  Trash,
+  Info,
+  RefreshCw,
+  Crown
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { 
@@ -34,6 +52,8 @@ import {
   ResponsiveContainer, 
   BarChart, 
   Bar, 
+  LineChart,
+  Line,
   XAxis, 
   YAxis, 
   Tooltip, 
@@ -44,7 +64,10 @@ import Markdown from 'react-markdown';
 import { useTheme } from './context/ThemeContext';
 import { useAuth } from './context/AuthContext';
 import { firebaseService } from './services/firebaseService';
-import { getFinancialAdvice } from './services/aiService';
+import { 
+  getFinancialAdvice, 
+  getBudgetInsight 
+} from './services/aiService';
 import { cn } from './lib/utils';
 
 // --- Utils ---
@@ -108,31 +131,33 @@ const Button = ({
 }: { 
   children: React.ReactNode; 
   onClick?: () => void; 
-  variant?: 'primary' | 'secondary' | 'danger' | 'ghost';
+  variant?: 'primary' | 'secondary' | 'danger' | 'ghost' | 'gradient';
   className?: string;
   type?: 'button' | 'submit';
   disabled?: boolean;
 }) => {
   const variants = {
     primary: "bg-indigo-600 hover:bg-indigo-700 text-white shadow-lg shadow-indigo-500/20",
+    gradient: "bg-gradient-to-r from-indigo-500 to-purple-600 hover:shadow-indigo-500/40 text-white shadow-lg shadow-indigo-500/30",
     secondary: "bg-slate-100 hover:bg-slate-200 dark:bg-slate-900 dark:hover:bg-slate-800 text-slate-900 dark:text-slate-100",
     danger: "bg-rose-500 hover:bg-rose-600 text-white shadow-lg shadow-rose-500/20",
     ghost: "bg-transparent hover:bg-slate-100 dark:hover:bg-slate-900 text-slate-600 dark:text-slate-400"
   };
 
   return (
-    <button 
+    <motion.button 
+      whileTap={{ scale: 0.96 }}
       type={type}
       onClick={(e) => { triggerHaptic(); onClick?.(); }}
       disabled={disabled}
       className={cn(
-        "px-6 py-3 rounded-2xl font-semibold transition-all active:scale-95 disabled:opacity-50 disabled:active:scale-100",
+        "px-6 py-3 rounded-2xl font-semibold transition-all disabled:opacity-50",
         variants[variant],
         className
       )}
     >
       {children}
-    </button>
+    </motion.button>
   );
 };
 
@@ -187,17 +212,139 @@ const Select = ({
   </div>
 );
 
+const TransactionItem = ({ 
+  transaction, 
+  onDelete, 
+  deletingId 
+}: { 
+  transaction: any; 
+  onDelete?: (id: string) => void; 
+  deletingId?: string | null;
+}) => {
+  const config = getCategoryConfig(transaction.category);
+  const isIncome = transaction.type === 'income';
+  const isDeleting = deletingId === transaction.id;
+
+  return (
+    <motion.div 
+      initial={{ opacity: 0, y: 10 }}
+      animate={{ opacity: 1, y: 0 }}
+      className={cn(
+        "flex items-center justify-between p-4 rounded-[24px] bg-white dark:bg-slate-900/50 border border-white/5 transition-all hover:scale-[1.01] group relative overflow-hidden",
+        isDeleting && "opacity-50 pointer-events-none scale-[0.98]"
+      )}
+    >
+      <div className="flex items-center gap-4">
+        <div className={cn("w-10 h-10 rounded-2xl flex items-center justify-center", config.color)}>
+          <config.icon size={20} strokeWidth={1.2} />
+        </div>
+        <div>
+          <p className="font-bold text-sm dark:text-white">{transaction.category}</p>
+          <p className="text-[10px] text-slate-500">{format(parseISO(transaction.date), 'MMM dd')}</p>
+        </div>
+      </div>
+      <div className="flex items-center gap-4">
+        <div className="text-right">
+          <p className={cn(
+            "font-bold text-sm tracking-tight",
+            isIncome ? "text-indigo-500" : "dark:text-white"
+          )}>
+            {isIncome ? '+' : ''}${transaction.amount.toLocaleString()}
+          </p>
+          {transaction.description && <p className="text-[10px] text-slate-400 uppercase tracking-widest text-right">{transaction.description}</p>}
+        </div>
+        {onDelete && (
+          <button 
+            onClick={() => onDelete(transaction.id)}
+            className="p-1.5 text-rose-500/80 hover:text-rose-500 opacity-0 group-hover:opacity-100 transition-all translate-x-4 group-hover:translate-x-0"
+          >
+            {isDeleting ? (
+              <div className="w-3.5 h-3.5 border-2 border-rose-500 border-t-transparent rounded-full animate-spin" />
+            ) : (
+              <Trash2 size={14} strokeWidth={1.5} />
+            )}
+          </button>
+        )}
+      </div>
+    </motion.div>
+  );
+};
+
 // --- Pages ---
+
+const FloatingInput = ({ 
+  label, 
+  type = 'text', 
+  value, 
+  onChange, 
+  icon: Icon,
+  required = false 
+}: { 
+  label: string; 
+  type?: string; 
+  value: string; 
+  onChange: (val: string) => void;
+  icon: any;
+  required?: boolean;
+}) => {
+  const [isFocused, setIsFocused] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
+  const isPassword = type === 'password';
+
+  return (
+    <div className="relative group">
+      <div className={cn(
+        "absolute left-4 top-1/2 -translate-y-1/2 transition-colors z-10",
+        isFocused ? "text-indigo-500" : "text-slate-500"
+      )}>
+        <Icon size={20} strokeWidth={1.5} />
+      </div>
+      
+      <input
+        type={isPassword ? (showPassword ? 'text' : 'password') : type}
+        value={value}
+        onChange={(e) => onChange(e.target.value)}
+        onFocus={() => setIsFocused(true)}
+        onBlur={() => setIsFocused(false)}
+        required={required}
+        className={cn(
+          "w-full pl-12 pr-12 py-4 bg-white/5 border border-white/10 rounded-[24px] outline-none transition-all text-white placeholder-transparent peer",
+          isFocused && "border-indigo-500/50 ring-4 ring-indigo-500/10"
+        )}
+        placeholder={label}
+      />
+      
+      <label className={cn(
+        "absolute left-12 top-1/2 -translate-y-1/2 text-slate-500 transition-all pointer-events-none",
+        (isFocused || value) && "-translate-y-8 text-xs text-indigo-500 font-bold"
+      )}>
+        {label}
+      </label>
+
+      {isPassword && (
+        <button
+          type="button"
+          onClick={() => setShowPassword(!showPassword)}
+          className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-500 hover:text-white transition-colors"
+        >
+          {showPassword ? <EyeOff size={20} strokeWidth={1.5} /> : <Eye size={20} strokeWidth={1.5} />}
+        </button>
+      )}
+    </div>
+  );
+};
 
 const AuthPage = () => {
   const [isLogin, setIsLogin] = useState(true);
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
+  const [isLoading, setIsLoading] = useState(false);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
+    setIsLoading(true);
     try {
       if (isLogin) {
         await firebaseService.login(email, password);
@@ -206,76 +353,245 @@ const AuthPage = () => {
       }
     } catch (err: any) {
       setError(err.message);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleResetPassword = async () => {
+    if (!email) {
+      setError('Please enter your email first.');
+      return;
+    }
+    try {
+      await firebaseService.resetPassword(email);
+      setError('Password reset email sent!');
+    } catch (err: any) {
+      setError(err.message);
     }
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-[#FAFAFA] dark:bg-[#050505] p-6">
+    <div className="min-h-screen flex items-center justify-center bg-[#050505] p-6 relative overflow-hidden">
+      {/* Ambient Glow Orbs */}
+      <div className="absolute top-[-10%] left-[-10%] w-[50%] h-[50%] bg-indigo-600/20 blur-[120px] rounded-full" />
+      <div className="absolute bottom-[-10%] right-[-10%] w-[50%] h-[50%] bg-purple-600/20 blur-[120px] rounded-full" />
+
       <motion.div 
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
-        className="w-full max-w-md"
+        className="w-full max-w-md z-10"
       >
-        <Card className="space-y-8 p-10">
-          <div className="text-center space-y-3">
-            <h1 className="text-4xl font-bold tracking-tighter text-slate-900 dark:text-white">Expenso</h1>
-            <p className="text-slate-500 dark:text-slate-400 text-sm font-medium">
-              {isLogin ? 'Welcome back to your financial space.' : 'Start your journey to financial clarity.'}
-            </p>
-          </div>
+        <div className="text-center mb-12">
+          <motion.div
+            initial={{ y: -20, opacity: 0 }}
+            animate={{ y: 0, opacity: 1 }}
+            transition={{ delay: 0.2 }}
+            className="inline-block"
+          >
+            <h1 className="text-5xl font-bold tracking-tighter text-white mb-2">Expenso</h1>
+            <div className="h-1 w-12 bg-indigo-500 mx-auto rounded-full" />
+          </motion.div>
+        </div>
 
-          {error && (
-            <div className="p-4 bg-rose-500/10 text-rose-500 text-xs font-bold uppercase tracking-widest rounded-2xl border border-rose-500/20 text-center">
-              {error}
-            </div>
-          )}
+        <AnimatePresence mode="wait">
+          <motion.div
+            key={isLogin ? 'login' : 'register'}
+            initial={{ x: isLogin ? -20 : 20, opacity: 0 }}
+            animate={{ x: 0, opacity: 1 }}
+            exit={{ x: isLogin ? 20 : -20, opacity: 0 }}
+            transition={{ type: "spring", damping: 25, stiffness: 200 }}
+          >
+            <Card className="space-y-8 p-10 bg-white/5 border-white/10 backdrop-blur-xl">
+              <div className="text-center space-y-2">
+                <h2 className="text-2xl font-bold text-white">
+                  {isLogin ? 'Welcome back' : 'Create account'}
+                </h2>
+                <p className="text-slate-400 text-sm">
+                  {isLogin ? 'Sign in to continue your journey.' : 'Start your journey to financial clarity.'}
+                </p>
+              </div>
 
-          <form onSubmit={handleSubmit} className="space-y-5">
-            <Input label="Email" type="email" value={email} onChange={setEmail} placeholder="name@example.com" required />
-            <Input label="Password" type="password" value={password} onChange={setPassword} placeholder="••••••••" required />
-            <Button type="submit" className="w-full py-4 text-lg">
-              {isLogin ? 'Sign In' : 'Create Account'}
-            </Button>
-          </form>
+              {error && (
+                <motion.div 
+                  initial={{ opacity: 0, scale: 0.9 }}
+                  animate={{ opacity: 1, scale: 1 }}
+                  className={cn(
+                    "p-4 text-xs font-bold uppercase tracking-widest rounded-2xl border text-center",
+                    error.includes('sent') 
+                      ? "bg-emerald-500/10 text-emerald-500 border-emerald-500/20" 
+                      : "bg-rose-500/10 text-rose-500 border-rose-500/20"
+                  )}
+                >
+                  {error}
+                </motion.div>
+              )}
 
-          <div className="text-center">
-            <button 
-              onClick={() => setIsLogin(!isLogin)}
-              className="text-xs font-bold uppercase tracking-widest text-indigo-500 hover:text-indigo-600 transition-colors"
-            >
-              {isLogin ? "New here? Join Expenso" : "Already a member? Sign In"}
-            </button>
-          </div>
-        </Card>
+              <form onSubmit={handleSubmit} className="space-y-6">
+                <FloatingInput 
+                  label="Email" 
+                  type="email" 
+                  value={email} 
+                  onChange={setEmail} 
+                  icon={Mail}
+                  required 
+                />
+                <div className="space-y-2">
+                  <FloatingInput 
+                    label="Password" 
+                    type="password" 
+                    value={password} 
+                    onChange={setPassword} 
+                    icon={Lock}
+                    required 
+                  />
+                  {isLogin && (
+                    <div className="text-right">
+                      <button 
+                        type="button"
+                        onClick={handleResetPassword}
+                        className="text-[10px] font-bold uppercase tracking-widest text-slate-500 hover:text-indigo-500 transition-colors"
+                      >
+                        Forgot Password?
+                      </button>
+                    </div>
+                  )}
+                </div>
+
+                <Button 
+                  type="submit" 
+                  variant="gradient" 
+                  className="w-full py-4 text-lg"
+                  disabled={isLoading}
+                >
+                  {isLoading ? 'Processing...' : (isLogin ? 'Sign In' : 'Get Started')}
+                </Button>
+              </form>
+
+              <div className="text-center">
+                <button 
+                  onClick={() => { triggerHaptic(); setIsLogin(!isLogin); setError(''); }}
+                  className="text-xs text-slate-400"
+                >
+                  {isLogin ? "Don't have an account? " : "Already have an account? "}
+                  <span className="font-bold text-indigo-500 hover:text-indigo-400 transition-colors">
+                    {isLogin ? 'Sign Up' : 'Sign In'}
+                  </span>
+                </button>
+              </div>
+            </Card>
+          </motion.div>
+        </AnimatePresence>
       </motion.div>
     </div>
   );
 };
 
-const Dashboard = ({ transactions }: { transactions: any[] }) => {
+const BudgetProgressBar = ({ current, total }: { current: number, total: number }) => {
+  const percentage = Math.min(100, (current / total) * 100);
+  const isOver = percentage >= 100;
+  const isWarning = percentage >= 80 && percentage < 100;
+
+  return (
+    <Card className="p-6 rounded-[24px] bg-white dark:bg-slate-900/50 border border-white/5">
+      <div className="flex justify-between items-end mb-4">
+        <div>
+          <p className="text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-1">Weekly Budget</p>
+          <h3 className="text-xl font-bold dark:text-white tracking-tight">
+            ${current.toLocaleString()} <span className="text-slate-500 text-sm font-medium">/ ${total.toLocaleString()}</span>
+          </h3>
+        </div>
+        <div className={cn(
+          "px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider",
+          isOver ? "bg-rose-500/20 text-rose-500" : isWarning ? "bg-amber-500/20 text-amber-500" : "bg-indigo-500/20 text-indigo-500"
+        )}>
+          {isOver ? 'Over Limit' : isWarning ? 'Caution' : 'On Track'}
+        </div>
+      </div>
+      <div className="relative h-3 bg-slate-100 dark:bg-slate-800 rounded-full overflow-hidden">
+        <motion.div 
+          initial={{ width: 0 }}
+          animate={{ 
+            width: `${percentage}%`,
+            backgroundColor: isOver ? '#f43f5e' : isWarning ? '#f59e0b' : '#6366f1'
+          }}
+          transition={{ type: "spring", damping: 20, stiffness: 100 }}
+          className={cn(
+            "h-full rounded-full",
+            isOver && "animate-pulse shadow-[0_0_10px_rgba(244,63,94,0.5)]"
+          )}
+        />
+      </div>
+      <div className="flex justify-between mt-3">
+        <p className="text-[10px] text-slate-500 font-bold uppercase tracking-widest">{Math.round(percentage)}% Used</p>
+        <p className="text-[10px] text-slate-500 font-bold uppercase tracking-widest">${(total - current).toLocaleString()} Left</p>
+      </div>
+    </Card>
+  );
+};
+
+const InsightChip = ({ insight }: { insight: string }) => {
+  if (!insight) return null;
+  return (
+    <motion.div 
+      initial={{ opacity: 0, y: -20 }}
+      animate={{ opacity: 1, y: 0 }}
+      className="bg-indigo-600/10 border border-indigo-500/20 p-4 rounded-2xl flex items-start gap-3 mb-6"
+    >
+      <div className="w-8 h-8 bg-indigo-600 rounded-xl flex items-center justify-center text-white shrink-0">
+        <Zap size={16} fill="currentColor" />
+      </div>
+      <p className="text-xs font-medium text-indigo-600 dark:text-indigo-400 leading-relaxed">
+        {insight}
+      </p>
+    </motion.div>
+  );
+};
+
+const Dashboard = ({ transactions, weeklyBudget, budgetInsight }: { transactions: any[], weeklyBudget: number, budgetInsight: string }) => {
   const income = transactions.filter(t => t.type === 'income').reduce((acc, t) => acc + t.amount, 0);
   const expenses = transactions.filter(t => t.type === 'expense').reduce((acc, t) => acc + t.amount, 0);
   const balance = income - expenses;
 
-  const categoryTotals = transactions
-    .filter(t => t.type === 'expense')
-    .reduce((acc: any, t) => {
-      acc[t.category] = (acc[t.category] || 0) + t.amount;
-      return acc;
-    }, {});
+  // Calculate current week's spending
+  const startOfWeek = new Date();
+  startOfWeek.setDate(startOfWeek.getDate() - startOfWeek.getDay());
+  startOfWeek.setHours(0, 0, 0, 0);
+  
+  const weeklyExpenses = transactions
+    .filter(t => t.type === 'expense' && new Date(t.date) >= startOfWeek)
+    .reduce((acc, t) => acc + t.amount, 0);
 
-  const topCategories = Object.entries(categoryTotals)
-    .sort((a: any, b: any) => b[1] - a[1])
-    .slice(0, 5);
+  const last7Days = [...Array(7)].map((_, i) => {
+    const d = new Date();
+    d.setDate(d.getDate() - (6 - i));
+    return format(d, 'yyyy-MM-dd');
+  });
+
+  const incomeTrend = last7Days.map(date => ({
+    amount: transactions
+      .filter(t => t.type === 'income' && t.date === date)
+      .reduce((acc, t) => acc + t.amount, 0)
+  }));
+
+  const expenseTrend = last7Days.map(date => ({
+    amount: transactions
+      .filter(t => t.type === 'expense' && t.date === date)
+      .reduce((acc, t) => acc + t.amount, 0)
+  }));
 
   return (
     <div className="space-y-8 pb-32">
-      <div className="flex flex-col items-center justify-center py-8 space-y-1">
+      <InsightChip insight={budgetInsight} />
+
+      <div className="flex flex-col items-center justify-center py-4 space-y-1">
         <p className="text-slate-500 text-xs font-bold uppercase tracking-[0.2em]">Available Balance</p>
         <h2 className="text-5xl font-bold dark:text-white tracking-tighter text-indigo-500">
           ${balance.toLocaleString()}
         </h2>
       </div>
+
+      <BudgetProgressBar current={weeklyExpenses} total={weeklyBudget} />
 
       <div className="grid grid-cols-2 gap-4">
         <Card className="bg-emerald-500/10 border border-emerald-500/20 p-5">
@@ -300,22 +616,57 @@ const Dashboard = ({ transactions }: { transactions: any[] }) => {
       </div>
 
       <div className="space-y-4">
-        <h3 className="text-sm font-bold uppercase tracking-widest text-slate-500 px-2">Financial Pulse</h3>
+        <h3 className="text-sm font-bold uppercase tracking-widest text-slate-500 px-2">Weekly Trends</h3>
         <div className="flex gap-4 overflow-x-auto pb-4 -mx-4 px-4 no-scrollbar">
-          {topCategories.map(([category, amount]: any) => {
-            const config = getCategoryConfig(category);
-            return (
-              <Card key={category} className="min-w-[140px] p-4 flex flex-col items-center text-center space-y-3 bg-white dark:bg-slate-900/50">
-                <div className={cn("w-12 h-12 rounded-2xl flex items-center justify-center", config.color)}>
-                  <config.icon size={22} strokeWidth={1.2} />
-                </div>
-                <div>
-                  <p className="text-xs font-bold dark:text-white">{category}</p>
-                  <p className="text-[10px] text-slate-500 font-medium">${amount.toLocaleString()}</p>
-                </div>
-              </Card>
-            );
-          })}
+          {/* Income Sparkline */}
+          <Card className="min-w-[280px] p-5 bg-white dark:bg-slate-900/50 border border-white/5">
+            <div className="flex justify-between items-start mb-4">
+              <div>
+                <p className="text-[10px] font-bold text-emerald-500 uppercase tracking-widest">Income Flow</p>
+                <p className="text-lg font-bold dark:text-white mt-1">7-Day Trend</p>
+              </div>
+              <TrendingUp size={16} className="text-emerald-500" />
+            </div>
+            <div className="h-20 w-full">
+              <ResponsiveContainer width="100%" height="100%">
+                <LineChart data={incomeTrend}>
+                  <Line 
+                    type="monotone" 
+                    dataKey="amount" 
+                    stroke="#10b981" 
+                    strokeWidth={3} 
+                    dot={false} 
+                    animationDuration={2000}
+                  />
+                </LineChart>
+              </ResponsiveContainer>
+            </div>
+          </Card>
+
+          {/* Expense Sparkline */}
+          <Card className="min-w-[280px] p-5 bg-white dark:bg-slate-900/50 border border-white/5">
+            <div className="flex justify-between items-start mb-4">
+              <div>
+                <p className="text-[10px] font-bold text-rose-500 uppercase tracking-widest">Expense Flow</p>
+                <p className="text-lg font-bold dark:text-white mt-1">7-Day Trend</p>
+              </div>
+              <TrendingDown size={16} className="text-rose-500" />
+            </div>
+            <div className="h-20 w-full">
+              <ResponsiveContainer width="100%" height="100%">
+                <LineChart data={expenseTrend}>
+                  <Line 
+                    type="monotone" 
+                    dataKey="amount" 
+                    stroke="#f43f5e" 
+                    strokeWidth={3} 
+                    dot={false} 
+                    animationDuration={2000}
+                  />
+                </LineChart>
+              </ResponsiveContainer>
+            </div>
+          </Card>
         </div>
       </div>
 
@@ -325,42 +676,16 @@ const Dashboard = ({ transactions }: { transactions: any[] }) => {
           <button className="text-indigo-500 text-[10px] font-bold uppercase tracking-widest">View All</button>
         </div>
         <div className="space-y-3">
-          {transactions.slice(0, 2).map((t) => {
-            const config = getCategoryConfig(t.category);
-            return (
-              <motion.div 
-                key={t.id} 
-                initial={{ opacity: 0, y: 10 }}
-                animate={{ opacity: 1, y: 0 }}
-                className="flex items-center justify-between p-4 rounded-[24px] bg-white dark:bg-slate-900/50 border border-white/5 transition-all hover:scale-[1.01]"
-              >
-                <div className="flex items-center gap-4">
-                  <div className={cn("w-10 h-10 rounded-2xl flex items-center justify-center", config.color)}>
-                    <config.icon size={20} strokeWidth={1.2} />
-                  </div>
-                  <div>
-                    <p className="font-bold text-sm dark:text-white">{t.category}</p>
-                    <p className="text-[10px] text-slate-500">{format(parseISO(t.date), 'MMM dd')}</p>
-                  </div>
-                </div>
-                <div className="text-right">
-                  <p className={cn(
-                    "font-bold text-sm tracking-tight",
-                    t.type === 'income' ? "text-indigo-500" : "dark:text-white"
-                  )}>
-                    {t.type === 'income' ? '+' : ''}${t.amount.toLocaleString()}
-                  </p>
-                </div>
-              </motion.div>
-            );
-          })}
+          {transactions.slice(0, 2).map((t) => (
+            <TransactionItem key={t.id} transaction={t} />
+          ))}
         </div>
       </div>
     </div>
   );
 };
 
-const HistoryPage = ({ transactions, onDelete }: { transactions: any[], onDelete: (id: string) => void }) => {
+const HistoryPage = ({ transactions, onDelete, deletingId }: { transactions: any[], onDelete: (id: string) => void, deletingId: string | null }) => {
   const [search, setSearch] = useState('');
   const [filter, setFilter] = useState('all');
 
@@ -417,36 +742,14 @@ const HistoryPage = ({ transactions, onDelete }: { transactions: any[], onDelete
           <div key={group} className="space-y-3">
             <h3 className="text-[10px] font-bold uppercase tracking-[0.3em] text-slate-500 px-2">{group}</h3>
             <div className="space-y-2">
-              {items.map((t: any) => {
-                const config = getCategoryConfig(t.category);
-                return (
-                  <div key={t.id} className="flex items-center justify-between p-3 rounded-2xl bg-white dark:bg-slate-900/30 border border-white/5 transition-all hover:bg-white/5 group">
-                    <div className="flex items-center gap-3">
-                      <div className={cn("w-9 h-9 rounded-xl flex items-center justify-center", config.color)}>
-                        <config.icon size={18} strokeWidth={1.2} />
-                      </div>
-                      <div>
-                        <p className="font-bold text-xs dark:text-white">{t.category}</p>
-                        {t.description && <p className="text-[10px] text-slate-500 truncate max-w-[120px]">{t.description}</p>}
-                      </div>
-                    </div>
-                    <div className="flex items-center gap-3">
-                      <p className={cn(
-                        "font-bold text-sm tracking-tight",
-                        t.type === 'income' ? "text-indigo-500" : "dark:text-white"
-                      )}>
-                        {t.type === 'income' ? '+' : ''}${t.amount.toLocaleString()}
-                      </p>
-                      <button 
-                        onClick={() => onDelete(t.id)}
-                        className="p-1.5 text-slate-600 hover:text-rose-500 opacity-0 group-hover:opacity-100 transition-all"
-                      >
-                        <Trash2 size={14} strokeWidth={1.5} />
-                      </button>
-                    </div>
-                  </div>
-                );
-              })}
+              {items.map((t: any) => (
+                <TransactionItem 
+                  key={t.id} 
+                  transaction={t} 
+                  onDelete={onDelete} 
+                  deletingId={deletingId} 
+                />
+              ))}
             </div>
           </div>
         ))}
@@ -644,7 +947,7 @@ const SplashScreen = () => (
   </motion.div>
 );
 
-const TypewriterMarkdown = ({ content, isLast }: { content: string, isLast: boolean }) => {
+const TypewriterMarkdown = ({ content, isLast, onUpdate }: { content: string, isLast: boolean, onUpdate?: () => void }) => {
   const [displayedContent, setDisplayedContent] = useState(isLast ? '' : content);
   
   useEffect(() => {
@@ -657,7 +960,10 @@ const TypewriterMarkdown = ({ content, isLast }: { content: string, isLast: bool
     const timer = setInterval(() => {
       setDisplayedContent(content.slice(0, i));
       i++;
-      if (i > content.length) clearInterval(timer);
+      onUpdate?.();
+      if (i > content.length) {
+        clearInterval(timer);
+      }
     }, 5);
     return () => clearInterval(timer);
   }, [content, isLast]);
@@ -685,9 +991,9 @@ const TypewriterMarkdown = ({ content, isLast }: { content: string, isLast: bool
   );
 };
 
-const AiAssistant = ({ transactions, isOpen, onClose }: { transactions: any[], isOpen: boolean, onClose: () => void }) => {
+const AiAssistant = ({ transactions, isOpen, onClose, weeklyBudget }: { transactions: any[], isOpen: boolean, onClose: () => void, weeklyBudget: number }) => {
   const [messages, setMessages] = useState<{ role: 'user' | 'ai'; content: string }[]>([
-    { role: 'ai', content: "Hello! I'm your Expenso AI Assistant. Ask me anything about your finances!" }
+    { role: 'ai', content: "Hello! I'm your Expenso AI Assistant. Ask me anything about your finances or your budget!" }
   ]);
   const [input, setInput] = useState('');
   const [isTyping, setIsTyping] = useState(false);
@@ -719,7 +1025,7 @@ const AiAssistant = ({ transactions, isOpen, onClose }: { transactions: any[], i
     setInput('');
     setMessages(prev => [...prev, { role: 'user', content: userMsg }]);
     setIsTyping(true);
-    const advice = await getFinancialAdvice(transactions, userMsg);
+    const advice = await getFinancialAdvice(transactions, userMsg, weeklyBudget);
     setMessages(prev => [...prev, { role: 'ai', content: advice || "I'm sorry, I couldn't process that." }]);
     setIsTyping(false);
   };
@@ -769,7 +1075,11 @@ const AiAssistant = ({ transactions, isOpen, onClose }: { transactions: any[], i
                     )}
                     <div className="prose prose-sm dark:prose-invert max-w-none">
                       {msg.role === 'ai' ? (
-                        <TypewriterMarkdown content={msg.content} isLast={i === messages.length - 1} />
+                        <TypewriterMarkdown 
+                          content={msg.content} 
+                          isLast={i === messages.length - 1} 
+                          onUpdate={scrollToBottom}
+                        />
                       ) : (
                         <p className="leading-relaxed text-sm">{msg.content}</p>
                       )}
@@ -822,79 +1132,180 @@ const AiAssistant = ({ transactions, isOpen, onClose }: { transactions: any[], i
   );
 };
 
-const ProfilePage = () => {
+const ProfilePage = ({ transactions }: { transactions: any[] }) => {
   const { user, logout } = useAuth();
   const { theme, toggleTheme } = useTheme();
-  const [scrollY, setScrollY] = useState(0);
+  const [isRefreshing, setIsRefreshing] = useState(false);
 
-  useEffect(() => {
-    const handleScroll = () => setScrollY(window.scrollY);
-    window.addEventListener('scroll', handleScroll);
-    return () => window.removeEventListener('scroll', handleScroll);
-  }, []);
+  const income = transactions.filter(t => t.type === 'income').reduce((acc, t) => acc + t.amount, 0);
+  const expenses = transactions.filter(t => t.type === 'expense').reduce((acc, t) => acc + t.amount, 0);
+  const savingsRate = income > 0 ? Math.round(((income - expenses) / income) * 100) : 0;
+
+  const handleRefresh = async () => {
+    setIsRefreshing(true);
+    triggerHaptic([10, 20, 10]);
+    // Simulate sync
+    await new Promise(resolve => setTimeout(resolve, 1500));
+    setIsRefreshing(false);
+  };
+
+  const SettingGroup = ({ title, children }: { title: string, children: React.ReactNode }) => (
+    <div className="space-y-3">
+      <h3 className="text-[10px] font-bold uppercase tracking-[0.2em] text-slate-500 px-4">{title}</h3>
+      <Card className="overflow-hidden rounded-[24px] bg-white/5 border-white/10 backdrop-blur-md">
+        <div className="divide-y divide-white/5">
+          {children}
+        </div>
+      </Card>
+    </div>
+  );
+
+  const SettingRow = ({ 
+    icon: Icon, 
+    label, 
+    value, 
+    onClick, 
+    color = "text-slate-400",
+    isRed = false,
+    rightContent
+  }: { 
+    icon: any, 
+    label: string, 
+    value?: string, 
+    onClick?: () => void,
+    color?: string,
+    isRed?: boolean,
+    rightContent?: React.ReactNode
+  }) => (
+    <motion.button
+      whileTap={{ scale: 0.98 }}
+      onClick={() => { triggerHaptic(5); onClick?.(); }}
+      className="w-full flex items-center justify-between p-4 hover:bg-white/5 transition-colors text-left"
+    >
+      <div className="flex items-center gap-4">
+        <div className={cn("w-10 h-10 rounded-2xl flex items-center justify-center bg-white/5", isRed ? "text-rose-500" : color)}>
+          <Icon size={20} strokeWidth={1.5} />
+        </div>
+        <div>
+          <p className={cn("text-sm font-bold", isRed ? "text-rose-500" : "text-white")}>{label}</p>
+          {value && <p className="text-[10px] text-slate-500 font-medium uppercase tracking-widest">{value}</p>}
+        </div>
+      </div>
+      <div className="flex items-center gap-2">
+        {rightContent}
+        <ChevronRight size={16} className="text-slate-600" />
+      </div>
+    </motion.button>
+  );
 
   return (
     <div className="max-w-2xl mx-auto space-y-10 pb-32">
-      <div className={cn(
-        "sticky top-0 z-30 -mx-6 px-6 py-6 transition-all duration-300",
-        scrollY > 20 ? "bg-white/80 dark:bg-black/80 backdrop-blur-[25px] shadow-sm" : "bg-transparent"
-      )}>
-        <h2 className="text-3xl font-bold dark:text-white tracking-tight">Settings</h2>
-      </div>
-      
-      <Card className="flex flex-col items-center text-center py-12 rounded-[24px]">
-        <div className="w-24 h-24 bg-indigo-500/10 rounded-full flex items-center justify-center text-indigo-500 mb-6 shadow-inner">
-          <User size={48} strokeWidth={1} />
-        </div>
-        <h3 className="text-2xl font-bold dark:text-white tracking-tight">{user?.email}</h3>
-        <p className="text-slate-400 text-sm font-medium mt-1 uppercase tracking-widest">Premium Member</p>
-      </Card>
+      {/* Pull to Refresh Indicator */}
+      <motion.div 
+        animate={{ height: isRefreshing ? 60 : 0, opacity: isRefreshing ? 1 : 0 }}
+        className="flex items-center justify-center overflow-hidden"
+      >
+        <RefreshCw size={20} className="text-indigo-500 animate-spin" />
+      </motion.div>
 
-      <div className="space-y-4">
-        <Card className="p-2 rounded-[24px]">
-          <div className="flex items-center justify-between p-4">
-            <div className="flex items-center gap-4">
-              <div className="w-10 h-10 bg-slate-100 dark:bg-slate-900 rounded-2xl flex items-center justify-center dark:text-white">
-                {theme === 'dark' ? <Moon size={20} strokeWidth={1.2} /> : <Sun size={20} strokeWidth={1.2} />}
-              </div>
-              <div>
-                <p className="font-bold dark:text-white">Dark Mode</p>
-                <p className="text-xs text-slate-500">Switch to {theme === 'dark' ? 'light' : 'dark'} aesthetic</p>
-              </div>
-            </div>
-            <button 
-              onClick={() => { triggerHaptic(15); toggleTheme(); }}
-              className={cn(
-                "w-12 h-6 rounded-full transition-all relative",
-                theme === 'dark' ? "bg-indigo-600" : "bg-slate-200"
-              )}
-            >
-              <motion.div 
-                animate={{ x: theme === 'dark' ? 24 : 4 }}
-                className="absolute top-1 w-4 h-4 bg-white rounded-full shadow-sm" 
+      {/* Profile Header */}
+      <div className="flex flex-col items-center text-center pt-8">
+        <motion.div 
+          drag="y"
+          dragConstraints={{ top: 0, bottom: 100 }}
+          onDragEnd={(_, info) => { if (info.offset.y > 50) handleRefresh(); }}
+          className="relative group cursor-grab active:cursor-grabbing"
+        >
+          <div className="w-28 h-28 rounded-full p-1 bg-gradient-to-tr from-indigo-500 to-purple-500">
+            <div className="w-full h-full rounded-full bg-[#050505] flex items-center justify-center overflow-hidden">
+              <img 
+                src={`https://api.dicebear.com/7.x/avataaars/svg?seed=${user?.email}`} 
+                alt="Avatar"
+                className="w-full h-full object-cover"
               />
-            </button>
-          </div>
-
-          <div className="h-px bg-slate-50 dark:bg-slate-800 mx-4" />
-
-          <button 
-            onClick={logout}
-            className="w-full flex items-center justify-between p-4 text-rose-500 hover:bg-rose-500/5 rounded-2xl transition-all group"
-          >
-            <div className="flex items-center gap-4">
-              <div className="w-10 h-10 bg-rose-500/10 rounded-2xl flex items-center justify-center">
-                <LogOut size={20} strokeWidth={1.2} />
-              </div>
-              <span className="font-bold">Sign Out</span>
             </div>
-            <ChevronRight size={18} className="text-slate-300 group-hover:translate-x-1 transition-transform" />
-          </button>
-        </Card>
+          </div>
+          <motion.div 
+            initial={{ scale: 0 }}
+            animate={{ scale: 1 }}
+            className="absolute -bottom-1 -right-1 w-8 h-8 bg-indigo-600 rounded-full border-4 border-[#050505] flex items-center justify-center text-white"
+          >
+            <Crown size={14} fill="currentColor" />
+          </motion.div>
+        </motion.div>
+
+        <div className="mt-6 space-y-2">
+          <h3 className="text-2xl font-bold text-white tracking-tight">{user?.email}</h3>
+          <div className="inline-flex items-center gap-1.5 px-3 py-1 bg-indigo-500/10 border border-indigo-500/20 rounded-full backdrop-blur-md">
+            <Zap size={12} className="text-indigo-500" fill="currentColor" />
+            <span className="text-[10px] font-bold text-indigo-500 uppercase tracking-widest">Premium Member</span>
+          </div>
+        </div>
+
+        {/* Quick Stats */}
+        <div className="grid grid-cols-3 gap-8 w-full mt-10 px-4">
+          <div className="text-center space-y-1">
+            <p className="text-xl font-bold text-white">{transactions.length}</p>
+            <p className="text-[10px] text-slate-500 font-bold uppercase tracking-widest">Transactions</p>
+          </div>
+          <div className="text-center space-y-1 border-x border-white/5">
+            <p className="text-xl font-bold text-white">{savingsRate}%</p>
+            <p className="text-[10px] text-slate-500 font-bold uppercase tracking-widest">Savings Rate</p>
+          </div>
+          <div className="text-center space-y-1">
+            <p className="text-xl font-bold text-white">128</p>
+            <p className="text-[10px] text-slate-500 font-bold uppercase tracking-widest">AI Queries</p>
+          </div>
+        </div>
       </div>
 
-      <div className="text-center pt-10">
-        <p className="text-[10px] text-slate-400 uppercase tracking-[0.2em] font-bold">Expenso v2.0.0 • Crafted with Care</p>
+      {/* Settings Groups */}
+      <div className="space-y-8 px-2">
+        <SettingGroup title="Account">
+          <SettingRow icon={SettingsIcon} label="Profile Details" value="Personal Information" />
+          <SettingRow icon={CreditCard} label="Connected Bank" value="HDFC Bank •••• 4242" />
+          <SettingRow icon={Crown} label="Subscription" value="Premium Plan • Active" color="text-amber-500" />
+        </SettingGroup>
+
+        <SettingGroup title="Preferences">
+          <SettingRow 
+            icon={theme === 'dark' ? Moon : Sun} 
+            label="Dark Mode" 
+            rightContent={
+              <button 
+                onClick={(e) => { e.stopPropagation(); triggerHaptic(15); toggleTheme(); }}
+                className={cn(
+                  "w-10 h-5 rounded-full transition-all relative",
+                  theme === 'dark' ? "bg-indigo-600" : "bg-slate-700"
+                )}
+              >
+                <motion.div 
+                  animate={{ x: theme === 'dark' ? 22 : 2 }}
+                  className="absolute top-1 w-3 h-3 bg-white rounded-full shadow-sm" 
+                />
+              </button>
+            }
+          />
+          <SettingRow icon={DollarSign} label="Currency" value="USD ($)" />
+          <SettingRow icon={Globe} label="Language" value="English" />
+        </SettingGroup>
+
+        <SettingGroup title="AI Settings">
+          <SettingRow icon={Brain} label="Thinking Level" value="High Reasoning" color="text-purple-500" />
+          <SettingRow icon={Mic} label="AI Voice" value="Zephyr (Male)" />
+          <SettingRow icon={Trash} label="Clear AI History" isRed />
+        </SettingGroup>
+
+        <SettingGroup title="Support & Legal">
+          <SettingRow icon={HelpCircle} label="Help Center" />
+          <SettingRow icon={Shield} label="Privacy Policy" />
+          <SettingRow icon={Info} label="About Expenso" value="v2.4.0" />
+        </SettingGroup>
+
+        <div className="pt-4 space-y-2">
+          <SettingRow icon={LogOut} label="Sign Out" isRed onClick={logout} />
+          <SettingRow icon={Trash} label="Delete Account" isRed />
+        </div>
       </div>
     </div>
   );
@@ -909,6 +1320,11 @@ export default function App() {
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
   const [isAiOpen, setIsAiOpen] = useState(false);
   const [transactions, setTransactions] = useState<any[]>([]);
+  const [deletingId, setDeletingId] = useState<string | null>(null);
+  const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
+  const [transactionToDelete, setTransactionToDelete] = useState<string | null>(null);
+  const [weeklyBudget, setWeeklyBudget] = useState(500);
+  const [budgetInsight, setBudgetInsight] = useState('');
 
   // Form state
   const [amount, setAmount] = useState('');
@@ -935,6 +1351,10 @@ export default function App() {
     try {
       const data = await firebaseService.getTransactions(user.id);
       setTransactions(data);
+      
+      // Fetch budget insight
+      const insight = await getBudgetInsight(data, weeklyBudget);
+      setBudgetInsight(insight);
     } catch (err) {
       console.error(err);
     }
@@ -962,13 +1382,28 @@ export default function App() {
   };
 
   const handleDelete = async (id: string) => {
-    if (window.confirm('Are you sure you want to delete this transaction?')) {
-      try {
-        await firebaseService.deleteTransaction(id);
-        loadTransactions();
-      } catch (err) {
-        console.error(err);
-      }
+    setTransactionToDelete(id);
+    setIsDeleteModalOpen(true);
+    triggerHaptic(10);
+  };
+
+  const confirmDelete = async () => {
+    if (!transactionToDelete) return;
+    
+    const id = transactionToDelete;
+    setIsDeleteModalOpen(false);
+    setDeletingId(id);
+    triggerHaptic([10, 30, 10]);
+
+    try {
+      await firebaseService.deleteTransaction(id);
+      setTransactions(prev => prev.filter(t => t.id !== id));
+      setDeletingId(null);
+      setTransactionToDelete(null);
+    } catch (err) {
+      console.error(err);
+      setDeletingId(null);
+      setTransactionToDelete(null);
     }
   };
 
@@ -1002,10 +1437,22 @@ export default function App() {
             exit={{ opacity: 0, x: -20 }}
             transition={{ type: "spring", damping: 25, stiffness: 200 }}
           >
-            {activeTab === 'dashboard' && <Dashboard transactions={transactions} />}
-            {activeTab === 'history' && <HistoryPage transactions={transactions} onDelete={handleDelete} />}
+            {activeTab === 'dashboard' && (
+              <Dashboard 
+                transactions={transactions} 
+                weeklyBudget={weeklyBudget}
+                budgetInsight={budgetInsight}
+              />
+            )}
+            {activeTab === 'history' && (
+              <HistoryPage 
+                transactions={transactions} 
+                onDelete={handleDelete} 
+                deletingId={deletingId}
+              />
+            )}
             {activeTab === 'reports' && <ReportsPage transactions={transactions} />}
-            {activeTab === 'profile' && <ProfilePage />}
+            {activeTab === 'profile' && <ProfilePage transactions={transactions} />}
           </motion.div>
         </AnimatePresence>
       </main>
@@ -1047,7 +1494,55 @@ export default function App() {
         ))}
       </nav>
 
-      <AiAssistant transactions={transactions} isOpen={isAiOpen} onClose={() => setIsAiOpen(false)} />
+      <AiAssistant 
+        transactions={transactions} 
+        isOpen={isAiOpen} 
+        onClose={() => setIsAiOpen(false)} 
+        weeklyBudget={weeklyBudget}
+      />
+
+      {/* Delete Confirmation Modal */}
+      <AnimatePresence>
+        {isDeleteModalOpen && (
+          <>
+            <motion.div 
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              onClick={() => setIsDeleteModalOpen(false)}
+              className="fixed inset-0 bg-black/60 backdrop-blur-sm z-[100]"
+            />
+            <motion.div
+              initial={{ scale: 0.9, opacity: 0, y: 20 }}
+              animate={{ scale: 1, opacity: 1, y: 0 }}
+              exit={{ scale: 0.9, opacity: 0, y: 20 }}
+              className="fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[90%] max-w-sm bg-[#050505] border border-white/10 rounded-[32px] p-8 z-[101] shadow-2xl"
+            >
+              <div className="w-16 h-16 bg-rose-500/10 rounded-3xl flex items-center justify-center text-rose-500 mx-auto mb-6">
+                <Trash2 size={32} strokeWidth={1.5} />
+              </div>
+              <h3 className="text-xl font-bold text-white text-center mb-2">Delete Transaction?</h3>
+              <p className="text-slate-400 text-center text-sm mb-8 leading-relaxed">
+                This action cannot be undone. This record will be permanently removed from your history.
+              </p>
+              <div className="flex flex-col gap-3">
+                <button 
+                  onClick={confirmDelete}
+                  className="w-full py-4 bg-rose-500 hover:bg-rose-600 text-white font-bold rounded-2xl transition-all active:scale-95"
+                >
+                  Delete Permanently
+                </button>
+                <button 
+                  onClick={() => setIsDeleteModalOpen(false)}
+                  className="w-full py-4 bg-white/5 hover:bg-white/10 text-slate-300 font-bold rounded-2xl transition-all"
+                >
+                  Cancel
+                </button>
+              </div>
+            </motion.div>
+          </>
+        )}
+      </AnimatePresence>
 
       {/* Add Transaction Modal */}
       <AnimatePresence>

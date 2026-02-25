@@ -2,23 +2,40 @@ import { GoogleGenAI, ThinkingLevel } from "@google/genai";
 
 const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY || "" });
 
-export async function getFinancialAdvice(transactions: any[], userMessage: string) {
+const sleep = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
+
+async function withRetry<T>(fn: () => Promise<T>, retries = 3, delay = 1000): Promise<T> {
+  try {
+    return await fn();
+  } catch (error: any) {
+    if (retries > 0 && error?.message?.includes('429')) {
+      await sleep(delay);
+      return withRetry(fn, retries - 1, delay * 2);
+    }
+    throw error;
+  }
+}
+
+export async function getFinancialAdvice(transactions: any[], userMessage: string, weeklyBudget: number = 500) {
   const model = "gemini-3.1-pro-preview";
   
   const context = `
     You are a professional financial assistant for an app called Expenso.
+    The user has a weekly budget of $${weeklyBudget}.
     The user has the following transaction history:
     ${JSON.stringify(transactions, null, 2)}
     
     Current date: ${new Date().toISOString()}
     
     Provide concise, actionable financial advice or answer the user's specific question based on this data.
-    If the user asks for tips, give them 3 specific ones.
+    Pay special attention to "Spending Velocity" (how fast they are spending vs time left in the week).
+    If they ask about daily spending limits, calculate it based on remaining budget and days left in the week.
+    Identify the "biggest budget drain" by looking at categories with highest expense totals.
     Be encouraging but realistic.
   `;
 
   try {
-    const response = await ai.models.generateContent({
+    const response = await withRetry(() => ai.models.generateContent({
       model,
       contents: userMessage,
       config: {
@@ -27,10 +44,64 @@ export async function getFinancialAdvice(transactions: any[], userMessage: strin
           thinkingLevel: ThinkingLevel.HIGH
         }
       },
-    });
+    }));
     return response.text;
   } catch (error) {
     console.error("AI Service Error:", error);
     return "I'm sorry, I'm having trouble analyzing your finances right now. Please try again later.";
+  }
+}
+
+export async function getBudgetInsight(transactions: any[], weeklyBudget: number = 500) {
+  const model = "gemini-3.1-pro-preview";
+  
+  // Local Fallback Calculation
+  const calculateLocalInsight = () => {
+    const startOfWeek = new Date();
+    startOfWeek.setDate(startOfWeek.getDate() - startOfWeek.getDay());
+    startOfWeek.setHours(0, 0, 0, 0);
+    
+    const weeklyExpenses = transactions
+      .filter(t => t.type === 'expense' && new Date(t.date) >= startOfWeek)
+      .reduce((acc, t) => acc + t.amount, 0);
+    
+    const daysPassed = Math.max(1, new Date().getDay() + 1);
+    const velocity = (weeklyExpenses / weeklyBudget) / (daysPassed / 7);
+    
+    if (velocity > 1.2) {
+      const percentageUsed = Math.round((weeklyExpenses / weeklyBudget) * 100);
+      return `Heads up! You've used ${percentageUsed}% of your weekly budget in ${daysPassed} days. You might want to slow down your spending.`;
+    }
+    return "";
+  };
+
+  const systemInstruction = `
+    You are a financial analyst for Expenso. 
+    Analyze the user's spending velocity for the current week.
+    Weekly Budget: $${weeklyBudget}
+    Transactions: ${JSON.stringify(transactions)}
+    Current Date: ${new Date().toISOString()}
+
+    If the user is spending too fast (Spending Velocity > 1.0, where 1.0 is perfectly on track), provide a ONE-SENTENCE warning insight.
+    Example: "Hey! You've used 70% of your food budget in 3 days. Consider slowing down."
+    If they are on track, return an empty string.
+    Focus on being proactive and helpful.
+  `;
+
+  try {
+    const response = await withRetry(() => ai.models.generateContent({
+      model,
+      contents: "Analyze my spending velocity and provide a one-sentence warning if I'm over-pacing.",
+      config: {
+        systemInstruction,
+        thinkingConfig: {
+          thinkingLevel: ThinkingLevel.HIGH
+        }
+      },
+    }), 2, 500); // Fewer retries for background insights
+    return response.text?.trim() || "";
+  } catch (error) {
+    console.warn("Budget Insight AI failed, using local fallback:", error);
+    return calculateLocalInsight();
   }
 }
