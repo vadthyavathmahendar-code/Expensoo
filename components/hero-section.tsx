@@ -52,9 +52,8 @@ export function HeroSection() {
       <div className="relative z-10 mx-auto max-w-4xl text-center">
         {/* Status Badge */}
         <div
-          className={`mb-6 inline-flex items-center gap-2 rounded-full border border-border bg-secondary/50 px-4 py-1.5 text-sm text-muted-foreground transition-all duration-1000 ease-[cubic-bezier(0.4,0,0.2,1)] ${
-            isVisible ? "translate-y-0 opacity-100" : "-translate-y-4 opacity-0"
-          }`}
+          className={`mb-6 inline-flex items-center gap-2 rounded-full border border-border bg-secondary/50 px-4 py-1.5 text-sm text-muted-foreground transition-all duration-1000 ease-[cubic-bezier(0.4,0,0.2,1)] ${isVisible ? "translate-y-0 opacity-100" : "-translate-y-4 opacity-0"
+            }`}
         >
           <span className="relative flex h-2 w-2">
             <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-emerald-400 opacity-75" />
@@ -65,9 +64,8 @@ export function HeroSection() {
 
         {/* Main Heading */}
         <h1
-          className={`mb-6 text-4xl font-bold leading-tight tracking-tight text-foreground transition-all delay-100 duration-1000 ease-[cubic-bezier(0.4,0,0.2,1)] md:text-6xl lg:text-7xl ${
-            isVisible ? "translate-y-0 opacity-100" : "translate-y-8 opacity-0"
-          }`}
+          className={`mb-6 text-4xl font-bold leading-tight tracking-tight text-foreground transition-all delay-100 duration-1000 ease-[cubic-bezier(0.4,0,0.2,1)] md:text-6xl lg:text-7xl ${isVisible ? "translate-y-0 opacity-100" : "translate-y-8 opacity-0"
+            }`}
         >
           {"Hi, I'm "}
           <span className="text-gradient">V Mahendar</span>
@@ -79,18 +77,16 @@ export function HeroSection() {
 
         {/* Subtitle */}
         <p
-          className={`mx-auto mb-4 max-w-2xl text-lg leading-relaxed text-muted-foreground transition-all delay-200 duration-1000 ease-[cubic-bezier(0.4,0,0.2,1)] md:text-xl ${
-            isVisible ? "translate-y-0 opacity-100" : "translate-y-8 opacity-0"
-          }`}
+          className={`mx-auto mb-4 max-w-2xl text-lg leading-relaxed text-muted-foreground transition-all delay-200 duration-1000 ease-[cubic-bezier(0.4,0,0.2,1)] md:text-xl ${isVisible ? "translate-y-0 opacity-100" : "translate-y-8 opacity-0"
+            }`}
         >
           Building scalable web applications and intelligent solutions.
         </p>
 
         {/* Typing effect */}
         <div
-          className={`mb-10 flex items-center justify-center font-mono text-lg text-primary transition-all delay-300 duration-1000 ease-[cubic-bezier(0.4,0,0.2,1)] md:text-xl ${
-            isVisible ? "translate-y-0 opacity-100" : "translate-y-8 opacity-0"
-          }`}
+          className={`mb-10 flex items-center justify-center font-mono text-lg text-primary transition-all delay-300 duration-1000 ease-[cubic-bezier(0.4,0,0.2,1)] md:text-xl ${isVisible ? "translate-y-0 opacity-100" : "translate-y-8 opacity-0"
+            }`}
         >
           <span className="mr-2 text-muted-foreground">{">"}</span>
           <span>{displayText}</span>
@@ -105,9 +101,8 @@ export function HeroSection() {
 
         {/* CTA Buttons */}
         <div
-          className={`flex flex-col items-center justify-center gap-4 transition-all delay-400 duration-1000 ease-[cubic-bezier(0.4,0,0.2,1)] sm:flex-row ${
-            isVisible ? "translate-y-0 opacity-100" : "translate-y-8 opacity-0"
-          }`}
+          className={`flex flex-col items-center justify-center gap-4 transition-all delay-400 duration-1000 ease-[cubic-bezier(0.4,0,0.2,1)] sm:flex-row ${isVisible ? "translate-y-0 opacity-100" : "translate-y-8 opacity-0"
+            }`}
         >
           <MagneticButton
             href="#projects"
@@ -131,9 +126,8 @@ export function HeroSection() {
 
         {/* Scroll indicator */}
         <div
-          className={`mt-16 flex justify-center transition-all delay-500 duration-1000 ease-[cubic-bezier(0.4,0,0.2,1)] ${
-            isVisible ? "translate-y-0 opacity-100" : "translate-y-8 opacity-0"
-          }`}
+          className={`mt-16 flex justify-center transition-all delay-500 duration-1000 ease-[cubic-bezier(0.4,0,0.2,1)] ${isVisible ? "translate-y-0 opacity-100" : "translate-y-8 opacity-0"
+            }`}
         >
           <a
             href="#about"

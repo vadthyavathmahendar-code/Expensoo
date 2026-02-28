@@ -65,18 +65,16 @@ export function ExperienceSection() {
     <section id="experience" className="relative px-6 py-24" ref={sectionRef}>
       <div className="mx-auto max-w-6xl">
         <div
-          className={`mb-16 text-center transition-all duration-700 ease-[cubic-bezier(0.4,0,0.2,1)] ${
-            isVisible ? "translate-y-0 opacity-100" : "translate-y-8 opacity-0"
-          }`}
+          className={`mb-16 text-center transition-all duration-700 ease-[cubic-bezier(0.4,0,0.2,1)] ${isVisible ? "translate-y-0 opacity-100" : "translate-y-8 opacity-0"
+            }`}
         >
           <h2 className="mb-4 text-3xl font-bold text-foreground md:text-4xl">
             Experience & <span className="text-gradient">Learning</span>
           </h2>
           <div className="mx-auto h-1 w-20 overflow-hidden rounded-full bg-secondary">
             <div
-              className={`h-full bg-gradient-to-r from-primary to-accent transition-all duration-1000 ease-out ${
-                isVisible ? "w-full" : "w-0"
-              }`}
+              className={`h-full bg-gradient-to-r from-primary to-accent transition-all duration-1000 ease-out ${isVisible ? "w-full" : "w-0"
+                }`}
             />
           </div>
           <p className="mx-auto mt-4 max-w-lg text-muted-foreground">
@@ -97,22 +95,19 @@ export function ExperienceSection() {
             {experiences.map((exp, i) => (
               <div
                 key={exp.title}
-                className={`flex flex-col items-start gap-6 md:flex-row md:items-center ${
-                  i % 2 === 1 ? "md:flex-row-reverse" : ""
-                } transition-all duration-700 ease-[cubic-bezier(0.4,0,0.2,1)] ${
-                  isVisible ? "translate-y-0 opacity-100" : "translate-y-12 opacity-0"
-                }`}
+                className={`flex flex-col items-start gap-6 md:flex-row md:items-center ${i % 2 === 1 ? "md:flex-row-reverse" : ""
+                  } transition-all duration-700 ease-[cubic-bezier(0.4,0,0.2,1)] ${isVisible ? "translate-y-0 opacity-100" : "translate-y-12 opacity-0"
+                  }`}
                 style={{ transitionDelay: `${i * 150}ms` }}
               >
                 {/* Card */}
                 <div
-                  className={`glass group w-full rounded-xl p-6 transition-all duration-500 ease-[cubic-bezier(0.4,0,0.2,1)] hover:border-primary/30 hover:shadow-[0_0_30px_rgba(56,189,248,0.15)] md:w-[calc(50%-2rem)] ${
-                    isVisible
+                  className={`glass group w-full rounded-xl p-6 transition-all duration-500 ease-[cubic-bezier(0.4,0,0.2,1)] hover:border-primary/30 hover:shadow-[0_0_30px_rgba(56,189,248,0.15)] md:w-[calc(50%-2rem)] ${isVisible
                       ? "translate-x-0 opacity-100"
                       : i % 2 === 0
                         ? "-translate-x-8 opacity-0"
                         : "translate-x-8 opacity-0"
-                  }`}
+                    }`}
                   style={{ transitionDelay: `${i * 150 + 100}ms` }}
                 >
                   <div className="mb-4 flex items-center gap-3">
@@ -128,9 +123,8 @@ export function ExperienceSection() {
                     {exp.tags.map((tag, tagIndex) => (
                       <span
                         key={tag}
-                        className={`rounded-md bg-secondary/60 px-2.5 py-1 font-mono text-xs text-primary transition-all duration-300 hover:bg-secondary hover:scale-105 ${
-                          isVisible ? "translate-y-0 opacity-100" : "translate-y-2 opacity-0"
-                        }`}
+                        className={`rounded-md bg-secondary/60 px-2.5 py-1 font-mono text-xs text-primary transition-all duration-300 hover:bg-secondary hover:scale-105 ${isVisible ? "translate-y-0 opacity-100" : "translate-y-2 opacity-0"
+                          }`}
                         style={{ transitionDelay: `${i * 150 + tagIndex * 50 + 200}ms` }}
                       >
                         {tag}
@@ -141,11 +135,10 @@ export function ExperienceSection() {
 
                 {/* Timeline dot */}
                 <div
-                  className={`hidden h-4 w-4 flex-shrink-0 rounded-full border-2 border-primary bg-background transition-all duration-500 ease-[cubic-bezier(0.4,0,0.2,1)] md:block ${
-                    scrollProgress > (i + 0.5) / experiences.length
+                  className={`hidden h-4 w-4 flex-shrink-0 rounded-full border-2 border-primary bg-background transition-all duration-500 ease-[cubic-bezier(0.4,0,0.2,1)] md:block ${scrollProgress > (i + 0.5) / experiences.length
                       ? "scale-125 bg-primary shadow-[0_0_15px_rgba(56,189,248,0.5)]"
                       : ""
-                  }`}
+                    }`}
                 />
 
                 {/* Spacer */}

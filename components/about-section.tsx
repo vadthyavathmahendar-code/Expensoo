@@ -49,18 +49,16 @@ export function AboutSection() {
     <section id="about" className="relative px-6 py-24" ref={sectionRef}>
       <div className="mx-auto max-w-6xl">
         <div
-          className={`mb-16 text-center transition-all duration-700 ease-[cubic-bezier(0.4,0,0.2,1)] ${
-            isVisible ? "translate-y-0 opacity-100" : "translate-y-8 opacity-0"
-          }`}
+          className={`mb-16 text-center transition-all duration-700 ease-[cubic-bezier(0.4,0,0.2,1)] ${isVisible ? "translate-y-0 opacity-100" : "translate-y-8 opacity-0"
+            }`}
         >
           <h2 className="mb-4 text-3xl font-bold text-foreground md:text-4xl">
             About <span className="text-gradient">Me</span>
           </h2>
           <div className="mx-auto h-1 w-20 overflow-hidden rounded-full bg-secondary">
             <div
-              className={`h-full bg-gradient-to-r from-primary to-accent transition-all duration-1000 ease-out ${
-                isVisible ? "w-full" : "w-0"
-              }`}
+              className={`h-full bg-gradient-to-r from-primary to-accent transition-all duration-1000 ease-out ${isVisible ? "w-full" : "w-0"
+                }`}
             />
           </div>
         </div>
@@ -68,9 +66,8 @@ export function AboutSection() {
         <div className="grid gap-12 lg:grid-cols-2">
           {/* Left - About Text */}
           <div
-            className={`transition-all duration-700 ease-[cubic-bezier(0.4,0,0.2,1)] ${
-              isVisible ? "translate-x-0 opacity-100" : "-translate-x-8 opacity-0"
-            }`}
+            className={`transition-all duration-700 ease-[cubic-bezier(0.4,0,0.2,1)] ${isVisible ? "translate-x-0 opacity-100" : "-translate-x-8 opacity-0"
+              }`}
             style={{ transitionDelay: "200ms" }}
           >
             <p className="mb-6 text-lg leading-relaxed text-muted-foreground">
@@ -93,9 +90,8 @@ export function AboutSection() {
               {skillBars.map((skill, i) => (
                 <div
                   key={skill.name}
-                  className={`transition-all duration-500 ease-[cubic-bezier(0.4,0,0.2,1)] ${
-                    isVisible ? "translate-x-0 opacity-100" : "-translate-x-4 opacity-0"
-                  }`}
+                  className={`transition-all duration-500 ease-[cubic-bezier(0.4,0,0.2,1)] ${isVisible ? "translate-x-0 opacity-100" : "-translate-x-4 opacity-0"
+                    }`}
                   style={{ transitionDelay: `${i * 100 + 400}ms` }}
                 >
                   <div className="mb-1.5 flex items-center justify-between">
@@ -121,9 +117,8 @@ export function AboutSection() {
 
           {/* Right - Highlight Cards */}
           <div
-            className={`flex flex-col gap-4 transition-all duration-700 ease-[cubic-bezier(0.4,0,0.2,1)] ${
-              isVisible ? "translate-x-0 opacity-100" : "translate-x-8 opacity-0"
-            }`}
+            className={`flex flex-col gap-4 transition-all duration-700 ease-[cubic-bezier(0.4,0,0.2,1)] ${isVisible ? "translate-x-0 opacity-100" : "translate-x-8 opacity-0"
+              }`}
             style={{ transitionDelay: "400ms" }}
           >
             {highlights.map((item, i) => (
@@ -131,9 +126,8 @@ export function AboutSection() {
                 key={item.title}
                 onMouseEnter={() => setHoveredCard(i)}
                 onMouseLeave={() => setHoveredCard(null)}
-                className={`glass group relative overflow-hidden rounded-xl p-6 transition-all duration-500 ease-[cubic-bezier(0.4,0,0.2,1)] hover:border-primary/30 ${
-                  isVisible ? "translate-y-0 opacity-100" : "translate-y-8 opacity-0"
-                }`}
+                className={`glass group relative overflow-hidden rounded-xl p-6 transition-all duration-500 ease-[cubic-bezier(0.4,0,0.2,1)] hover:border-primary/30 ${isVisible ? "translate-y-0 opacity-100" : "translate-y-8 opacity-0"
+                  }`}
                 style={{
                   transitionDelay: `${i * 100 + 500}ms`,
                   boxShadow: hoveredCard === i ? "0 0 30px rgba(56, 189, 248, 0.2)" : "none",

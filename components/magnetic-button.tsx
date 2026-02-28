@@ -9,6 +9,7 @@ interface MagneticButtonProps {
   onClick?: () => void
   type?: "button" | "submit"
   strength?: number
+  style?: React.CSSProperties
 }
 
 export function MagneticButton({
@@ -18,13 +19,16 @@ export function MagneticButton({
   onClick,
   type = "button",
   strength = 0.3,
+  style: externalStyle,
 }: MagneticButtonProps) {
-  const ref = useRef<HTMLElement>(null)
+  const buttonRef = useRef<HTMLButtonElement>(null)
+  const linkRef = useRef<HTMLAnchorElement>(null)
   const [position, setPosition] = useState({ x: 0, y: 0 })
 
   const handleMouseMove = (e: React.MouseEvent) => {
-    if (!ref.current) return
-    const rect = ref.current.getBoundingClientRect()
+    const element = href ? linkRef.current : buttonRef.current
+    if (!element) return
+    const rect = element.getBoundingClientRect()
     const centerX = rect.left + rect.width / 2
     const centerY = rect.top + rect.height / 2
     const x = (e.clientX - centerX) * strength
@@ -36,22 +40,23 @@ export function MagneticButton({
     setPosition({ x: 0, y: 0 })
   }
 
-  const style = {
+  const magneticStyle: React.CSSProperties = {
     transform: `translate(${position.x}px, ${position.y}px)`,
     transition: position.x === 0 && position.y === 0 
       ? "transform 0.5s cubic-bezier(0.4, 0, 0.2, 1)" 
       : "transform 0.15s cubic-bezier(0.4, 0, 0.2, 1)",
+    ...externalStyle,
   }
 
   if (href) {
     return (
       <a
-        ref={ref as React.RefObject<HTMLAnchorElement>}
+        ref={linkRef}
         href={href}
         className={className}
         onMouseMove={handleMouseMove}
         onMouseLeave={handleMouseLeave}
-        style={style}
+        style={magneticStyle}
       >
         {children}
       </a>
@@ -60,13 +65,13 @@ export function MagneticButton({
 
   return (
     <button
-      ref={ref as React.RefObject<HTMLButtonElement>}
+      ref={buttonRef}
       type={type}
       className={className}
       onClick={onClick}
       onMouseMove={handleMouseMove}
       onMouseLeave={handleMouseLeave}
-      style={style}
+      style={magneticStyle}
     >
       {children}
     </button>
