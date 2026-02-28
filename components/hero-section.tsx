@@ -1,7 +1,7 @@
 "use client"
 
 import { useEffect, useState } from "react"
-import { ArrowDown, ExternalLink, Mail } from "lucide-react"
+import { ArrowDown, ExternalLink, Mail, Download } from "lucide-react"
 import { MagneticButton } from "./magnetic-button"
 
 const roles = ["Full Stack Developer", "Java Developer", "AI Enthusiast"]
@@ -111,7 +111,7 @@ export function HeroSection() {
           >
             <ExternalLink size={18} className="transition-transform duration-300 group-hover:rotate-12" />
             View Projects
-            <span className="absolute inset-0 -translate-x-full bg-linear-to-r from-transparent via-white/20 to-transparent transition-transform duration-700 group-hover:translate-x-full" />
+            <span className="absolute inset-0 -translate-x-full bg-gradient-to-r from-transparent via-white/20 to-transparent transition-transform duration-700 group-hover:translate-x-full" />
           </MagneticButton>
           <MagneticButton
             href="#contact"
@@ -120,7 +120,17 @@ export function HeroSection() {
           >
             <Mail size={18} className="transition-transform duration-300 group-hover:scale-110" />
             Contact Me
-            <span className="absolute inset-0 -translate-x-full bg-linear-to-r from-transparent via-primary/10 to-transparent transition-transform duration-700 group-hover:translate-x-full" />
+            <span className="absolute inset-0 -translate-x-full bg-gradient-to-r from-transparent via-primary/10 to-transparent transition-transform duration-700 group-hover:translate-x-full" />
+          </MagneticButton>
+          <MagneticButton
+            href="/resume.pdf"
+            download
+            className="glass group relative inline-flex items-center gap-2 overflow-hidden rounded-lg border border-accent/30 px-6 py-3 font-medium text-foreground transition-all duration-300 hover:border-accent/50 hover:shadow-[0_0_20px_rgba(129,140,248,0.2)]"
+            strength={0.2}
+          >
+            <Download size={18} className="transition-transform duration-300 group-hover:-translate-y-0.5" />
+            Resume
+            <span className="absolute inset-0 -translate-x-full bg-gradient-to-r from-transparent via-accent/10 to-transparent transition-transform duration-700 group-hover:translate-x-full" />
           </MagneticButton>
         </div>
 
