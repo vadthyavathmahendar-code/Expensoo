@@ -48,9 +48,8 @@ export function HeroSection() {
       <div className="absolute inset-0 bg-gradient-radial" aria-hidden="true" />
 
       <div
-        className={`relative z-10 mx-auto max-w-4xl text-center transition-all duration-1000 ${
-          isVisible ? "translate-y-0 opacity-100" : "translate-y-8 opacity-0"
-        }`}
+        className={`relative z-10 mx-auto max-w-4xl text-center transition-all duration-1000 ${isVisible ? "translate-y-0 opacity-100" : "translate-y-8 opacity-0"
+          }`}
       >
         <div className="mb-6 inline-flex items-center gap-2 rounded-full border border-border bg-secondary/50 px-4 py-1.5 text-sm text-muted-foreground">
           <span className="inline-block h-2 w-2 animate-pulse rounded-full bg-emerald-400" />
@@ -59,7 +58,7 @@ export function HeroSection() {
 
         <h1 className="mb-6 text-4xl font-bold leading-tight tracking-tight text-foreground md:text-6xl lg:text-7xl">
           {"Hi, I'm "}
-          <span className="text-gradient">Mahi</span>
+          <span className="text-gradient">V Mahendar</span>
           <br />
           <span className="text-3xl font-medium text-muted-foreground md:text-4xl lg:text-5xl">
             Software Engineer & Problem Solver
