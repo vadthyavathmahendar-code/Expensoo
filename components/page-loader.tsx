@@ -1,6 +1,12 @@
 "use client"
 
-import { useEffect, useState } from "react"
+import { useEffect, useState, createContext, useContext } from "react"
+
+const LoaderContext = createContext({ isVisible: false })
+
+export function useLoaderState() {
+  return useContext(LoaderContext)
+}
 
 export function PageLoader({ children }: { children: React.ReactNode }) {
   const [isLoading, setIsLoading] = useState(true)
@@ -24,7 +30,7 @@ export function PageLoader({ children }: { children: React.ReactNode }) {
   }, [])
 
   return (
-    <>
+    <LoaderContext.Provider value={{ isVisible }}>
       {/* Loading Screen */}
       <div
         className={`fixed inset-0 z-[200] flex items-center justify-center bg-background transition-all duration-700 ease-[cubic-bezier(0.4,0,0.2,1)] ${
@@ -41,14 +47,14 @@ export function PageLoader({ children }: { children: React.ReactNode }) {
         </div>
       </div>
 
-      {/* Main Content */}
+      {/* Main Content - no transform to preserve fixed positioning */}
       <div
-        className={`transition-all duration-1000 ease-[cubic-bezier(0.4,0,0.2,1)] ${
-          isVisible ? "translate-y-0 opacity-100" : "translate-y-4 opacity-0"
+        className={`transition-opacity duration-1000 ease-[cubic-bezier(0.4,0,0.2,1)] ${
+          isVisible ? "opacity-100" : "opacity-0"
         }`}
       >
         {children}
       </div>
-    </>
+    </LoaderContext.Provider>
   )
 }
