@@ -42,7 +42,19 @@ import {
   Trash,
   Info,
   RefreshCw,
-  Crown
+  Crown,
+  Edit2,
+  Phone,
+  Camera,
+  Check,
+  Cat,
+  ShieldCheck,
+  Ghost,
+  Rocket,
+  Star,
+  Heart,
+  Sparkles,
+  BarChart3
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { 
@@ -63,32 +75,39 @@ import { format, parseISO, startOfMonth, endOfMonth, isWithinInterval } from 'da
 import Markdown from 'react-markdown';
 import { useTheme } from './context/ThemeContext';
 import { useAuth } from './context/AuthContext';
+import { useSettings } from './context/SettingsContext';
 import { firebaseService } from './services/firebaseService';
 import { 
   getFinancialAdvice, 
-  getBudgetInsight 
+  getBudgetInsight,
+  getBudgetForecast,
+  BudgetForecast
 } from './services/aiService';
-import { cn } from './lib/utils';
-
-// --- Utils ---
-
-const triggerHaptic = (pattern: number | number[] = 10) => {
-  if (typeof window !== 'undefined' && window.navigator.vibrate) {
-    window.navigator.vibrate(pattern);
-  }
-};
+import { notificationService } from './services/notificationService';
+import { cn, triggerHaptic } from './lib/utils';
 
 // --- Components ---
 
-const Card = ({ children, className }: { children: React.ReactNode; className?: string }) => (
-  <div className={cn("infinite-card rounded-[24px] p-6", className)}>
-    {children}
-  </div>
-);
-
-const StickyHeader = ({ title }: { title?: string }) => {
+const Card = ({ children, className }: { children: React.ReactNode; className?: string }) => {
+  const { isDark } = useTheme();
   return (
-    <div className="sticky top-0 z-50 w-full glass bg-[#050505]/80 backdrop-blur-xl border-b border-white/5 px-6 py-4 flex items-center justify-between">
+    <div className={cn(
+      "infinite-card rounded-[24px] p-6 transition-all",
+      isDark ? "bg-[#1e293b] border-white/5" : "bg-white border-slate-100 shadow-sm",
+      className
+    )}>
+      {children}
+    </div>
+  );
+};
+
+const StickyHeader = ({ title, hasUnreadNotifications }: { title?: string, hasUnreadNotifications?: boolean }) => {
+  const { isDark } = useTheme();
+  return (
+    <div className={cn(
+      "sticky top-0 z-50 w-full glass backdrop-blur-xl border-b px-6 py-4 flex items-center justify-between transition-colors",
+      isDark ? "bg-[#050505]/80 border-white/5" : "bg-white/80 border-slate-100"
+    )}>
       <div className="flex items-center gap-2">
         <div className="w-8 h-8 bg-gradient-to-br from-indigo-500 to-purple-600 rounded-lg flex items-center justify-center">
           <Wallet size={18} className="text-white" />
@@ -98,8 +117,14 @@ const StickyHeader = ({ title }: { title?: string }) => {
         </h1>
       </div>
       <div className="flex items-center gap-4">
-        <button className="p-2 bg-white/5 rounded-full text-slate-400 hover:text-white transition-colors">
+        <button className={cn(
+          "p-2 rounded-full transition-colors relative",
+          isDark ? "bg-white/5 text-slate-400 hover:text-white" : "bg-slate-100 text-slate-500 hover:text-slate-900"
+        )}>
           <Bell size={20} strokeWidth={1.5} />
+          {hasUnreadNotifications && (
+            <span className="absolute top-2 right-2.5 w-2 h-2 bg-indigo-500 rounded-full border-2 border-white dark:border-[#050505]" />
+          )}
         </button>
       </div>
     </div>
@@ -175,19 +200,23 @@ const Input = ({
   onChange: (val: any) => void;
   placeholder?: string;
   required?: boolean;
-}) => (
-  <div className="space-y-1.5">
-    <label className="text-sm font-medium text-slate-700 dark:text-slate-300">{label}</label>
-    <input 
-      type={type}
-      value={value}
-      onChange={(e) => onChange(e.target.value)}
-      placeholder={placeholder}
-      required={required}
-      className="w-full px-4 py-2.5 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl focus:ring-2 focus:ring-indigo-500 outline-none transition-all dark:text-white"
-    />
-  </div>
-);
+}) => {
+  const { colors } = useTheme();
+  return (
+    <div className="space-y-1.5">
+      <label className="text-sm font-medium text-slate-700 dark:text-slate-300">{label}</label>
+      <input 
+        type={type}
+        value={value}
+        onChange={(e) => onChange(e.target.value)}
+        placeholder={placeholder}
+        required={required}
+        style={{ backgroundColor: colors.inputBg }}
+        className="w-full px-4 py-2.5 border border-slate-200 dark:border-slate-700 rounded-xl focus:ring-2 focus:ring-indigo-500 outline-none transition-all dark:text-white text-slate-900"
+      />
+    </div>
+  );
+};
 
 const Select = ({ 
   label, 
@@ -199,18 +228,22 @@ const Select = ({
   options: { label: string; value: string }[]; 
   value: string; 
   onChange: (val: string) => void 
-}) => (
-  <div className="space-y-1.5">
-    <label className="text-sm font-medium text-slate-700 dark:text-slate-300">{label}</label>
-    <select 
-      value={value}
-      onChange={(e) => onChange(e.target.value)}
-      className="w-full px-4 py-2.5 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl focus:ring-2 focus:ring-indigo-500 outline-none transition-all dark:text-white"
-    >
-      {options.map(opt => <option key={opt.value} value={opt.value}>{opt.label}</option>)}
-    </select>
-  </div>
-);
+}) => {
+  const { colors } = useTheme();
+  return (
+    <div className="space-y-1.5">
+      <label className="text-sm font-medium text-slate-700 dark:text-slate-300">{label}</label>
+      <select 
+        value={value}
+        onChange={(e) => onChange(e.target.value)}
+        style={{ backgroundColor: colors.inputBg }}
+        className="w-full px-4 py-2.5 border border-slate-200 dark:border-slate-700 rounded-xl focus:ring-2 focus:ring-indigo-500 outline-none transition-all dark:text-white text-slate-900"
+      >
+        {options.map(opt => <option key={opt.value} value={opt.value}>{opt.label}</option>)}
+      </select>
+    </div>
+  );
+};
 
 const TransactionItem = ({ 
   transaction, 
@@ -224,13 +257,16 @@ const TransactionItem = ({
   const config = getCategoryConfig(transaction.category);
   const isIncome = transaction.type === 'income';
   const isDeleting = deletingId === transaction.id;
+  const { formatAmount } = useSettings();
+  const { isDark } = useTheme();
 
   return (
     <motion.div 
       initial={{ opacity: 0, y: 10 }}
       animate={{ opacity: 1, y: 0 }}
       className={cn(
-        "flex items-center justify-between p-4 rounded-[24px] bg-white dark:bg-slate-900/50 border border-white/5 transition-all hover:scale-[1.01] group relative overflow-hidden",
+        "flex items-center justify-between p-4 rounded-[24px] transition-all hover:scale-[1.01] group relative overflow-hidden border",
+        isDark ? "bg-slate-900/50 border-white/5" : "bg-white border-slate-100 shadow-sm",
         isDeleting && "opacity-50 pointer-events-none scale-[0.98]"
       )}
     >
@@ -239,7 +275,7 @@ const TransactionItem = ({
           <config.icon size={20} strokeWidth={1.2} />
         </div>
         <div>
-          <p className="font-bold text-sm dark:text-white">{transaction.category}</p>
+          <p className="font-bold text-sm dark:text-white text-slate-900">{transaction.category}</p>
           <p className="text-[10px] text-slate-500">{format(parseISO(transaction.date), 'MMM dd')}</p>
         </div>
       </div>
@@ -247,9 +283,9 @@ const TransactionItem = ({
         <div className="text-right">
           <p className={cn(
             "font-bold text-sm tracking-tight",
-            isIncome ? "text-indigo-500" : "dark:text-white"
+            isIncome ? "text-indigo-500" : "dark:text-white text-slate-900"
           )}>
-            {isIncome ? '+' : ''}${transaction.amount.toLocaleString()}
+            {isIncome ? '+' : ''}{formatAmount(transaction.amount)}
           </p>
           {transaction.description && <p className="text-[10px] text-slate-400 uppercase tracking-widest text-right">{transaction.description}</p>}
         </div>
@@ -290,6 +326,7 @@ const FloatingInput = ({
   const [isFocused, setIsFocused] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const isPassword = type === 'password';
+  const { isDark, colors } = useTheme();
 
   return (
     <div className="relative group">
@@ -307,8 +344,10 @@ const FloatingInput = ({
         onFocus={() => setIsFocused(true)}
         onBlur={() => setIsFocused(false)}
         required={required}
+        style={{ backgroundColor: colors.inputBg }}
         className={cn(
-          "w-full pl-12 pr-12 py-4 bg-white/5 border border-white/10 rounded-[24px] outline-none transition-all text-white placeholder-transparent peer",
+          "w-full pl-12 pr-12 py-4 border rounded-[24px] outline-none transition-all placeholder-transparent peer",
+          isDark ? "border-white/10 text-white" : "border-slate-200 text-slate-900",
           isFocused && "border-indigo-500/50 ring-4 ring-indigo-500/10"
         )}
         placeholder={label}
@@ -325,7 +364,7 @@ const FloatingInput = ({
         <button
           type="button"
           onClick={() => setShowPassword(!showPassword)}
-          className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-500 hover:text-white transition-colors"
+          className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-500 hover:text-indigo-500 transition-colors"
         >
           {showPassword ? <EyeOff size={20} strokeWidth={1.5} /> : <Eye size={20} strokeWidth={1.5} />}
         </button>
@@ -340,6 +379,7 @@ const AuthPage = () => {
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
   const [isLoading, setIsLoading] = useState(false);
+  const { isDark, colors } = useTheme();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -372,7 +412,10 @@ const AuthPage = () => {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-[#050505] p-6 relative overflow-hidden">
+    <div 
+      className="min-h-screen flex items-center justify-center p-6 relative overflow-hidden transition-colors"
+      style={{ backgroundColor: colors.bg }}
+    >
       {/* Ambient Glow Orbs */}
       <div className="absolute top-[-10%] left-[-10%] w-[50%] h-[50%] bg-indigo-600/20 blur-[120px] rounded-full" />
       <div className="absolute bottom-[-10%] right-[-10%] w-[50%] h-[50%] bg-purple-600/20 blur-[120px] rounded-full" />
@@ -389,7 +432,10 @@ const AuthPage = () => {
             transition={{ delay: 0.2 }}
             className="inline-block"
           >
-            <h1 className="text-5xl font-bold tracking-tighter text-white mb-2">Expenso</h1>
+            <h1 className={cn(
+              "text-5xl font-bold tracking-tighter mb-2",
+              isDark ? "text-white" : "text-slate-900"
+            )}>Expenso</h1>
             <div className="h-1 w-12 bg-indigo-500 mx-auto rounded-full" />
           </motion.div>
         </div>
@@ -402,12 +448,15 @@ const AuthPage = () => {
             exit={{ x: isLogin ? 20 : -20, opacity: 0 }}
             transition={{ type: "spring", damping: 25, stiffness: 200 }}
           >
-            <Card className="space-y-8 p-10 bg-white/5 border-white/10 backdrop-blur-xl">
+            <Card className={cn(
+              "space-y-8 p-10 backdrop-blur-xl",
+              isDark ? "bg-white/5 border-white/10" : "bg-white/80 border-slate-100"
+            )}>
               <div className="text-center space-y-2">
-                <h2 className="text-2xl font-bold text-white">
+                <h2 className={cn("text-2xl font-bold", isDark ? "text-white" : "text-slate-900")}>
                   {isLogin ? 'Welcome back' : 'Create account'}
                 </h2>
-                <p className="text-slate-400 text-sm">
+                <p className="text-slate-500 text-sm">
                   {isLogin ? 'Sign in to continue your journey.' : 'Start your journey to financial clarity.'}
                 </p>
               </div>
@@ -491,14 +540,19 @@ const BudgetProgressBar = ({ current, total }: { current: number, total: number 
   const percentage = Math.min(100, (current / total) * 100);
   const isOver = percentage >= 100;
   const isWarning = percentage >= 80 && percentage < 100;
+  const { formatAmount } = useSettings();
+  const { isDark } = useTheme();
 
   return (
-    <Card className="p-6 rounded-[24px] bg-white dark:bg-slate-900/50 border border-white/5">
+    <Card className={cn(
+      "p-6 rounded-[24px] transition-all",
+      isDark ? "bg-slate-900/50 border-white/5" : "bg-white border-slate-100 shadow-sm"
+    )}>
       <div className="flex justify-between items-end mb-4">
         <div>
           <p className="text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-1">Weekly Budget</p>
-          <h3 className="text-xl font-bold dark:text-white tracking-tight">
-            ${current.toLocaleString()} <span className="text-slate-500 text-sm font-medium">/ ${total.toLocaleString()}</span>
+          <h3 className="text-xl font-bold dark:text-white text-slate-900 tracking-tight">
+            {formatAmount(current)} <span className="text-slate-500 text-sm font-medium">/ {formatAmount(total)}</span>
           </h3>
         </div>
         <div className={cn(
@@ -524,7 +578,7 @@ const BudgetProgressBar = ({ current, total }: { current: number, total: number 
       </div>
       <div className="flex justify-between mt-3">
         <p className="text-[10px] text-slate-500 font-bold uppercase tracking-widest">{Math.round(percentage)}% Used</p>
-        <p className="text-[10px] text-slate-500 font-bold uppercase tracking-widest">${(total - current).toLocaleString()} Left</p>
+        <p className="text-[10px] text-slate-500 font-bold uppercase tracking-widest">{formatAmount(total - current)} Left</p>
       </div>
     </Card>
   );
@@ -552,6 +606,8 @@ const Dashboard = ({ transactions, weeklyBudget, budgetInsight }: { transactions
   const income = transactions.filter(t => t.type === 'income').reduce((acc, t) => acc + t.amount, 0);
   const expenses = transactions.filter(t => t.type === 'expense').reduce((acc, t) => acc + t.amount, 0);
   const balance = income - expenses;
+  const { formatAmount } = useSettings();
+  const { isDark } = useTheme();
 
   // Calculate current week's spending
   const startOfWeek = new Date();
@@ -586,32 +642,41 @@ const Dashboard = ({ transactions, weeklyBudget, budgetInsight }: { transactions
 
       <div className="flex flex-col items-center justify-center py-4 space-y-1">
         <p className="text-slate-500 text-xs font-bold uppercase tracking-[0.2em]">Available Balance</p>
-        <h2 className="text-5xl font-bold dark:text-white tracking-tighter text-indigo-500">
-          ${balance.toLocaleString()}
+        <h2 className={cn(
+          "text-5xl font-bold tracking-tighter text-indigo-500",
+          isDark ? "dark:text-white" : "text-indigo-600"
+        )}>
+          {formatAmount(balance)}
         </h2>
       </div>
 
       <BudgetProgressBar current={weeklyExpenses} total={weeklyBudget} />
 
       <div className="grid grid-cols-2 gap-4">
-        <Card className="bg-emerald-500/10 border border-emerald-500/20 p-5">
+        <Card className={cn(
+          "p-5 transition-all",
+          isDark ? "bg-emerald-500/10 border-emerald-500/20" : "bg-emerald-50 border-emerald-100"
+        )}>
           <div className="flex items-center gap-3 mb-4">
             <div className="w-10 h-10 bg-emerald-500 rounded-2xl flex items-center justify-center text-white shadow-lg shadow-emerald-500/20">
               <ArrowUpRight size={20} />
             </div>
             <p className="text-emerald-500/80 text-[10px] font-bold uppercase tracking-widest">Income</p>
           </div>
-          <h2 className="text-2xl font-bold text-emerald-500 tracking-tight">+${income.toLocaleString()}</h2>
+          <h2 className="text-2xl font-bold text-emerald-500 tracking-tight">+{formatAmount(income)}</h2>
         </Card>
 
-        <Card className="bg-rose-500/10 border border-rose-500/20 p-5">
+        <Card className={cn(
+          "p-5 transition-all",
+          isDark ? "bg-rose-500/10 border-rose-500/20" : "bg-rose-50 border-rose-100"
+        )}>
           <div className="flex items-center gap-3 mb-4">
             <div className="w-10 h-10 bg-rose-500 rounded-2xl flex items-center justify-center text-white shadow-lg shadow-rose-500/20">
               <ArrowDownLeft size={20} />
             </div>
             <p className="text-rose-500/80 text-[10px] font-bold uppercase tracking-widest">Expenses</p>
           </div>
-          <h2 className="text-2xl font-bold text-rose-500 tracking-tight">-${expenses.toLocaleString()}</h2>
+          <h2 className="text-2xl font-bold text-rose-500 tracking-tight">-{formatAmount(expenses)}</h2>
         </Card>
       </div>
 
@@ -619,11 +684,11 @@ const Dashboard = ({ transactions, weeklyBudget, budgetInsight }: { transactions
         <h3 className="text-sm font-bold uppercase tracking-widest text-slate-500 px-2">Weekly Trends</h3>
         <div className="flex gap-4 overflow-x-auto pb-4 -mx-4 px-4 no-scrollbar">
           {/* Income Sparkline */}
-          <Card className="min-w-[280px] p-5 bg-white dark:bg-slate-900/50 border border-white/5">
+          <Card className="min-w-[280px] p-5">
             <div className="flex justify-between items-start mb-4">
               <div>
                 <p className="text-[10px] font-bold text-emerald-500 uppercase tracking-widest">Income Flow</p>
-                <p className="text-lg font-bold dark:text-white mt-1">7-Day Trend</p>
+                <p className="text-lg font-bold dark:text-white text-slate-900 mt-1">7-Day Trend</p>
               </div>
               <TrendingUp size={16} className="text-emerald-500" />
             </div>
@@ -644,11 +709,11 @@ const Dashboard = ({ transactions, weeklyBudget, budgetInsight }: { transactions
           </Card>
 
           {/* Expense Sparkline */}
-          <Card className="min-w-[280px] p-5 bg-white dark:bg-slate-900/50 border border-white/5">
+          <Card className="min-w-[280px] p-5">
             <div className="flex justify-between items-start mb-4">
               <div>
                 <p className="text-[10px] font-bold text-rose-500 uppercase tracking-widest">Expense Flow</p>
-                <p className="text-lg font-bold dark:text-white mt-1">7-Day Trend</p>
+                <p className="text-lg font-bold dark:text-white text-slate-900 mt-1">7-Day Trend</p>
               </div>
               <TrendingDown size={16} className="text-rose-500" />
             </div>
@@ -688,6 +753,7 @@ const Dashboard = ({ transactions, weeklyBudget, budgetInsight }: { transactions
 const HistoryPage = ({ transactions, onDelete, deletingId }: { transactions: any[], onDelete: (id: string) => void, deletingId: string | null }) => {
   const [search, setSearch] = useState('');
   const [filter, setFilter] = useState('all');
+  const { isDark } = useTheme();
 
   const filtered = transactions.filter(t => {
     const matchesSearch = t.category.toLowerCase().includes(search.toLowerCase()) || 
@@ -722,13 +788,19 @@ const HistoryPage = ({ transactions, onDelete, deletingId }: { transactions: any
               placeholder="Search history..." 
               value={search}
               onChange={(e) => setSearch(e.target.value)}
-              className="w-full pl-10 pr-4 py-3 bg-white dark:bg-slate-900/50 border border-white/5 rounded-2xl outline-none focus:ring-2 focus:ring-indigo-500 dark:text-white shadow-sm text-sm"
+              className={cn(
+                "w-full pl-10 pr-4 py-3 border rounded-2xl outline-none focus:ring-2 focus:ring-indigo-500 transition-all text-sm",
+                isDark ? "bg-slate-900/50 border-white/5 text-white" : "bg-white border-slate-100 text-slate-900 shadow-sm"
+              )}
             />
           </div>
           <select 
             value={filter}
             onChange={(e) => setFilter(e.target.value)}
-            className="px-3 py-3 bg-white dark:bg-slate-900/50 border border-white/5 rounded-2xl outline-none focus:ring-2 focus:ring-indigo-500 dark:text-white shadow-sm font-bold text-[10px] uppercase tracking-widest"
+            className={cn(
+              "px-3 py-3 border rounded-2xl outline-none focus:ring-2 focus:ring-indigo-500 transition-all font-bold text-[10px] uppercase tracking-widest",
+              isDark ? "bg-slate-900/50 border-white/5 text-white" : "bg-white border-slate-100 text-slate-900 shadow-sm"
+            )}
           >
             <option value="all">All</option>
             <option value="income">Income</option>
@@ -766,7 +838,130 @@ const HistoryPage = ({ transactions, onDelete, deletingId }: { transactions: any
   );
 };
 
-const ReportsPage = ({ transactions }: { transactions: any[] }) => {
+const BudgetForecastSection = ({ transactions, weeklyBudget }: { transactions: any[], weeklyBudget: number }) => {
+  const [forecast, setForecast] = useState<BudgetForecast | null>(null);
+  const [loading, setLoading] = useState(false);
+  const { formatAmount } = useSettings();
+  const { isDark } = useTheme();
+
+  const fetchForecast = async () => {
+    setLoading(true);
+    const data = await getBudgetForecast(transactions, weeklyBudget);
+    setForecast(data);
+    setLoading(false);
+  };
+
+  useEffect(() => {
+    if (transactions.length > 0) {
+      fetchForecast();
+    }
+  }, [transactions, weeklyBudget]);
+
+  if (loading) {
+    return (
+      <Card className="p-8 flex flex-col items-center justify-center space-y-4 min-h-[200px]">
+        <div className="w-10 h-10 border-4 border-indigo-500 border-t-transparent rounded-full animate-spin" />
+        <p className="text-sm font-bold text-indigo-500 uppercase tracking-widest animate-pulse">Analyzing patterns...</p>
+      </Card>
+    );
+  }
+
+  if (!forecast) return null;
+
+  return (
+    <Card className="overflow-hidden border-indigo-500/20">
+      <div className="bg-gradient-to-r from-indigo-600 to-purple-600 p-6 flex items-center justify-between">
+        <div className="flex items-center gap-3">
+          <div className="w-10 h-10 bg-white/20 rounded-2xl flex items-center justify-center backdrop-blur-md">
+            <Sparkles size={20} className="text-white" />
+          </div>
+          <div>
+            <h3 className="text-lg font-bold text-white">AI Budget Forecast</h3>
+            <p className="text-white/60 text-[10px] font-bold uppercase tracking-widest">Next 7 Days Prediction</p>
+          </div>
+        </div>
+        <div className="text-right">
+          <p className="text-white/60 text-[10px] font-bold uppercase tracking-widest mb-1">Confidence</p>
+          <div className="flex items-center gap-2">
+            <div className="w-16 h-1.5 bg-white/20 rounded-full overflow-hidden">
+              <div 
+                className="h-full bg-white" 
+                style={{ width: `${forecast.confidence * 100}%` }} 
+              />
+            </div>
+            <span className="text-xs font-bold text-white">{Math.round(forecast.confidence * 100)}%</span>
+          </div>
+        </div>
+      </div>
+
+      <div className="p-6 space-y-8">
+        <div className="flex items-center justify-between">
+          <div>
+            <p className="text-xs font-bold text-slate-500 uppercase tracking-widest mb-1">Predicted Spending</p>
+            <h4 className={cn("text-3xl font-bold tracking-tighter", isDark ? "text-white" : "text-slate-900")}>
+              {formatAmount(forecast.predictedTotal)}
+            </h4>
+          </div>
+          <div className={cn(
+            "px-4 py-2 rounded-2xl font-bold text-xs uppercase tracking-widest",
+            forecast.predictedTotal > weeklyBudget ? "bg-rose-500/10 text-rose-500" : "bg-emerald-500/10 text-emerald-500"
+          )}>
+            {forecast.predictedTotal > weeklyBudget ? 'Over Budget' : 'Under Budget'}
+          </div>
+        </div>
+
+        <div className="space-y-4">
+          <p className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">Top Predicted Categories</p>
+          <div className="grid grid-cols-1 gap-3">
+            {forecast.topPredictedCategories.map((cat, i) => (
+              <div key={i} className={cn(
+                "flex items-center justify-between p-4 rounded-2xl border",
+                isDark ? "bg-white/5 border-white/5" : "bg-slate-50 border-slate-100"
+              )}>
+                <div className="flex items-center gap-3">
+                  <div className="w-8 h-8 bg-indigo-500/10 rounded-xl flex items-center justify-center text-indigo-500 font-bold text-[10px]">
+                    0{i + 1}
+                  </div>
+                  <span className={cn("font-bold text-sm", isDark ? "text-white" : "text-slate-900")}>{cat.category}</span>
+                </div>
+                <span className={cn("font-bold text-sm", isDark ? "text-white" : "text-slate-900")}>{formatAmount(cat.predictedAmount)}</span>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        <div className="space-y-4">
+          <p className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">Actionable Insights</p>
+          <div className="space-y-3">
+            {forecast.insights.map((insight, i) => (
+              <div key={i} className="flex gap-3 items-start">
+                <div className="w-5 h-5 bg-indigo-500 rounded-full flex items-center justify-center flex-shrink-0 mt-0.5">
+                  <Check size={12} className="text-white" />
+                </div>
+                <p className={cn("text-sm leading-relaxed", isDark ? "text-slate-400" : "text-slate-600")}>{insight}</p>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        <button 
+          onClick={fetchForecast}
+          className={cn(
+            "w-full py-4 rounded-2xl font-bold text-xs uppercase tracking-widest flex items-center justify-center gap-2 transition-all active:scale-95",
+            isDark ? "bg-white/5 text-slate-400 hover:bg-white/10" : "bg-slate-100 text-slate-600 hover:bg-slate-200"
+          )}
+        >
+          <RefreshCw size={14} className={loading ? "animate-spin" : ""} />
+          Refresh Forecast
+        </button>
+      </div>
+    </Card>
+  );
+};
+
+const ReportsPage = ({ transactions, weeklyBudget }: { transactions: any[], weeklyBudget: number }) => {
+  const { formatAmount } = useSettings();
+  const { isDark } = useTheme();
   // Monthly trends
   const monthlyData = transactions.reduce((acc: any, t) => {
     const month = format(parseISO(t.date), 'MMM');
@@ -795,6 +990,8 @@ const ReportsPage = ({ transactions }: { transactions: any[] }) => {
       </div>
       
       <div className="grid grid-cols-1 gap-8">
+        <BudgetForecastSection transactions={transactions} weeklyBudget={weeklyBudget} />
+
         <Card className="h-[400px] rounded-[24px]">
           <h3 className="text-sm font-bold uppercase tracking-widest text-slate-400 mb-6">Monthly Performance</h3>
           <ResponsiveContainer width="100%" height="100%">
@@ -833,7 +1030,7 @@ const ReportsPage = ({ transactions }: { transactions: any[] }) => {
                     </div>
                     <span className="font-bold dark:text-white">{name}</span>
                   </div>
-                  <span className="font-bold text-slate-900 dark:text-white tracking-tight">${value.toLocaleString()}</span>
+                  <span className="font-bold text-slate-900 dark:text-white tracking-tight">{formatAmount(value)}</span>
                 </div>
               ))}
             </div>
@@ -871,11 +1068,13 @@ const ReportsPage = ({ transactions }: { transactions: any[] }) => {
 };
 
 const NumberHighlighter = ({ text }: { text: string }) => {
-  const parts = text.split(/(\d+(?:\.\d+)?%?|\$\d+(?:\.\d+)?)/g);
+  const { currency } = useSettings();
+  const symbol = currency === 'INR' ? '₹' : '$';
+  const parts = text.split(new RegExp(`(\\d+(?:\\.\\d+)?%?|\\${symbol}\\d+(?:\\.\\d+)?)`, 'g'));
   return (
     <>
       {parts.map((part, i) => {
-        if (/^(\d+(?:\.\d+)?%?|\$\d+(?:\.\d+)?)$/.test(part)) {
+        if (new RegExp(`^(\\d+(?:\\.\\d+)?%?|\\${symbol}\\d+(?:\\.\\d+)?)$`).test(part)) {
           return <span key={i} className="text-indigo-500 font-bold">{part}</span>;
         }
         return part;
@@ -999,6 +1198,7 @@ const AiAssistant = ({ transactions, isOpen, onClose, weeklyBudget }: { transact
   const [isTyping, setIsTyping] = useState(false);
   const scrollRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
+  const { isDark } = useTheme();
 
   const scrollToBottom = () => {
     if (scrollRef.current) {
@@ -1046,17 +1246,20 @@ const AiAssistant = ({ transactions, isOpen, onClose, weeklyBudget }: { transact
             animate={{ y: 0 }}
             exit={{ y: "100%" }}
             transition={{ type: "spring", damping: 25, stiffness: 200 }}
-            className="fixed bottom-0 left-0 right-0 h-[85vh] glass bg-[#050505]/95 rounded-t-[40px] z-50 flex flex-col overflow-hidden shadow-2xl border-t border-white/5"
+            className={cn(
+              "fixed bottom-0 left-0 right-0 h-[85vh] glass rounded-t-[40px] z-50 flex flex-col overflow-hidden shadow-2xl border-t transition-colors",
+              isDark ? "bg-[#050505]/95 border-white/5" : "bg-white/95 border-slate-200"
+            )}
           >
             <div className="w-12 h-1.5 bg-slate-800 rounded-full mx-auto mt-4 mb-2" />
-            <div className="px-6 py-4 flex justify-between items-center border-b border-white/5">
+            <div className={cn("px-6 py-4 flex justify-between items-center border-b", isDark ? "border-white/5" : "border-slate-100")}>
               <div className="flex items-center gap-2">
                 <div className="w-8 h-8 bg-indigo-600 rounded-lg flex items-center justify-center">
                   <MessageSquare size={18} className="text-white" />
                 </div>
-                <h2 className="text-lg font-bold text-white tracking-tight">AI Assistant</h2>
+                <h2 className={cn("text-lg font-bold tracking-tight", isDark ? "text-white" : "text-slate-900")}>AI Assistant</h2>
               </div>
-              <button onClick={onClose} className="p-2 bg-white/5 rounded-full text-slate-400">
+              <button onClick={onClose} className={cn("p-2 rounded-full", isDark ? "bg-white/5 text-slate-400" : "bg-slate-100 text-slate-500")}>
                 <X size={20} strokeWidth={1.5} />
               </button>
             </div>
@@ -1068,7 +1271,7 @@ const AiAssistant = ({ transactions, isOpen, onClose, weeklyBudget }: { transact
                     "max-w-[85%] p-5 rounded-[28px] relative group",
                     msg.role === 'user' 
                       ? "bg-indigo-600 text-white rounded-tr-none" 
-                      : "bg-white/5 text-slate-200 rounded-tl-none border border-white/5"
+                      : (isDark ? "bg-white/5 text-slate-200 rounded-tl-none border border-white/5" : "bg-slate-100 text-slate-800 rounded-tl-none border border-slate-200")
                   )}>
                     {msg.role === 'ai' && (
                       <div className="absolute -left-2 -top-2 w-4 h-4 bg-indigo-500 rounded-full blur-lg opacity-0 group-hover:opacity-50 transition-opacity" />
@@ -1106,7 +1309,7 @@ const AiAssistant = ({ transactions, isOpen, onClose, weeklyBudget }: { transact
               )}
             </div>
 
-            <div className="p-6 pb-10 bg-[#050505] border-t border-white/5">
+            <div className={cn("p-6 pb-10 border-t transition-colors", isDark ? "bg-[#050505] border-white/5" : "bg-white border-slate-100")}>
               <form onSubmit={(e) => { e.preventDefault(); handleSend(); }} className="flex gap-3">
                 <input 
                   ref={inputRef}
@@ -1114,7 +1317,10 @@ const AiAssistant = ({ transactions, isOpen, onClose, weeklyBudget }: { transact
                   value={input}
                   onChange={(e) => setInput(e.target.value)}
                   placeholder="Ask anything..."
-                  className="flex-1 px-6 py-4 bg-white/5 border border-white/10 rounded-2xl outline-none focus:ring-2 focus:ring-indigo-500 text-white shadow-inner text-sm"
+                  className={cn(
+                    "flex-1 px-6 py-4 border rounded-2xl outline-none focus:ring-2 focus:ring-indigo-500 shadow-inner text-sm transition-all",
+                    isDark ? "bg-white/5 border-white/10 text-white" : "bg-slate-50 border-slate-200 text-slate-900"
+                  )}
                 />
                 <button 
                   type="submit" 
@@ -1134,8 +1340,87 @@ const AiAssistant = ({ transactions, isOpen, onClose, weeklyBudget }: { transact
 
 const ProfilePage = ({ transactions }: { transactions: any[] }) => {
   const { user, logout } = useAuth();
-  const { theme, toggleTheme } = useTheme();
+  const { theme, toggleTheme, isDark } = useTheme();
+  const { currency, setCurrency, weeklyBudget, setWeeklyBudget } = useSettings();
   const [isRefreshing, setIsRefreshing] = useState(false);
+  const [isAvatarModalOpen, setIsAvatarModalOpen] = useState(false);
+  const [isEditing, setIsEditing] = useState(false);
+  const [isBudgetModalOpen, setIsBudgetModalOpen] = useState(false);
+  const [isLogoutModalOpen, setIsLogoutModalOpen] = useState(false);
+  const [tempBudget, setTempBudget] = useState(weeklyBudget.toString());
+  const [notificationsEnabled, setNotificationsEnabled] = useState(notificationService.getPermissionStatus() === 'granted');
+  const [profile, setProfile] = useState({
+    displayName: '',
+    phoneNumber: '',
+    bio: '',
+    avatar: ''
+  });
+  const [isLoadingProfile, setIsLoadingProfile] = useState(true);
+
+  useEffect(() => {
+    if (user) {
+      loadProfile();
+    }
+  }, [user]);
+
+  const handleToggleNotifications = async () => {
+    if (!notificationsEnabled) {
+      const granted = await notificationService.requestPermission();
+      if (granted) {
+        setNotificationsEnabled(true);
+        if (user) {
+          // In a real web app, we'd get a real push token here
+          await firebaseService.updatePushToken(user.id, 'web-push-token-' + Math.random().toString(36).substr(2, 9));
+        }
+      }
+    } else {
+      // Web notifications can't be programmatically revoked easily, 
+      // but we can track the user's preference in our app state/DB.
+      setNotificationsEnabled(false);
+    }
+  };
+
+  const loadProfile = async () => {
+    if (!user) return;
+    try {
+      const data = await firebaseService.getUserProfile(user.id);
+      if (data) {
+        setProfile({
+          displayName: data.displayName || '',
+          phoneNumber: data.phoneNumber || '',
+          bio: data.bio || '',
+          avatar: data.avatar || ''
+        });
+      }
+    } catch (err) {
+      console.error(err);
+    } finally {
+      setIsLoadingProfile(false);
+    }
+  };
+
+  const handleSaveProfile = async () => {
+    if (!user) return;
+    try {
+      await firebaseService.updateUserProfile(user.id, profile);
+      setIsEditing(false);
+      triggerHaptic([10, 30, 10]);
+    } catch (err) {
+      console.error(err);
+    }
+  };
+
+  const handleAvatarSelect = async (avatarName: string) => {
+    if (!user) return;
+    try {
+      setProfile(prev => ({ ...prev, avatar: avatarName }));
+      await firebaseService.updateUserProfile(user.id, { avatar: avatarName });
+      setIsAvatarModalOpen(false);
+      triggerHaptic(20);
+    } catch (err) {
+      console.error(err);
+    }
+  };
 
   const income = transactions.filter(t => t.type === 'income').reduce((acc, t) => acc + t.amount, 0);
   const expenses = transactions.filter(t => t.type === 'expense').reduce((acc, t) => acc + t.amount, 0);
@@ -1144,10 +1429,22 @@ const ProfilePage = ({ transactions }: { transactions: any[] }) => {
   const handleRefresh = async () => {
     setIsRefreshing(true);
     triggerHaptic([10, 20, 10]);
-    // Simulate sync
-    await new Promise(resolve => setTimeout(resolve, 1500));
+    await loadProfile();
     setIsRefreshing(false);
   };
+
+  const avatars = [
+    { name: 'User', icon: User, color: 'text-indigo-500' },
+    { name: 'Cat', icon: Cat, color: 'text-orange-500' },
+    { name: 'Zap', icon: Zap, color: 'text-yellow-500' },
+    { name: 'Shield', icon: ShieldCheck, color: 'text-emerald-500' },
+    { name: 'Ghost', icon: Ghost, color: 'text-purple-500' },
+    { name: 'Rocket', icon: Rocket, color: 'text-blue-500' },
+    { name: 'Star', icon: Star, color: 'text-amber-500' },
+    { name: 'Heart', icon: Heart, color: 'text-rose-500' },
+  ];
+
+  const CurrentAvatarIcon = avatars.find(a => a.name === profile.avatar)?.icon || User;
 
   const SettingGroup = ({ title, children }: { title: string, children: React.ReactNode }) => (
     <div className="space-y-3">
@@ -1177,10 +1474,10 @@ const ProfilePage = ({ transactions }: { transactions: any[] }) => {
     isRed?: boolean,
     rightContent?: React.ReactNode
   }) => (
-    <motion.button
+    <motion.div
       whileTap={{ scale: 0.98 }}
       onClick={() => { triggerHaptic(5); onClick?.(); }}
-      className="w-full flex items-center justify-between p-4 hover:bg-white/5 transition-colors text-left"
+      className="w-full flex items-center justify-between p-4 hover:bg-white/5 transition-colors text-left cursor-pointer"
     >
       <div className="flex items-center gap-4">
         <div className={cn("w-10 h-10 rounded-2xl flex items-center justify-center bg-white/5", isRed ? "text-rose-500" : color)}>
@@ -1195,7 +1492,7 @@ const ProfilePage = ({ transactions }: { transactions: any[] }) => {
         {rightContent}
         <ChevronRight size={16} className="text-slate-600" />
       </div>
-    </motion.button>
+    </motion.div>
   );
 
   return (
@@ -1210,21 +1507,22 @@ const ProfilePage = ({ transactions }: { transactions: any[] }) => {
 
       {/* Profile Header */}
       <div className="flex flex-col items-center text-center pt-8">
-        <motion.div 
-          drag="y"
-          dragConstraints={{ top: 0, bottom: 100 }}
-          onDragEnd={(_, info) => { if (info.offset.y > 50) handleRefresh(); }}
-          className="relative group cursor-grab active:cursor-grabbing"
-        >
-          <div className="w-28 h-28 rounded-full p-1 bg-gradient-to-tr from-indigo-500 to-purple-500">
-            <div className="w-full h-full rounded-full bg-[#050505] flex items-center justify-center overflow-hidden">
-              <img 
-                src={`https://api.dicebear.com/7.x/avataaars/svg?seed=${user?.email}`} 
-                alt="Avatar"
-                className="w-full h-full object-cover"
-              />
+        <div className="relative">
+          <motion.button 
+            whileHover={{ scale: 1.05 }}
+            whileTap={{ scale: 0.95 }}
+            onClick={() => setIsAvatarModalOpen(true)}
+            className="relative group"
+          >
+            <div className="w-28 h-28 rounded-full p-1 bg-gradient-to-tr from-indigo-500 to-purple-500">
+              <div className="w-full h-full rounded-full bg-[#050505] flex items-center justify-center overflow-hidden">
+                <CurrentAvatarIcon size={56} strokeWidth={1} className="text-white" />
+              </div>
             </div>
-          </div>
+            <div className="absolute inset-0 flex items-center justify-center bg-black/40 rounded-full opacity-0 group-hover:opacity-100 transition-opacity">
+              <Camera size={24} className="text-white" />
+            </div>
+          </motion.button>
           <motion.div 
             initial={{ scale: 0 }}
             animate={{ scale: 1 }}
@@ -1232,28 +1530,70 @@ const ProfilePage = ({ transactions }: { transactions: any[] }) => {
           >
             <Crown size={14} fill="currentColor" />
           </motion.div>
-        </motion.div>
+        </div>
 
-        <div className="mt-6 space-y-2">
-          <h3 className="text-2xl font-bold text-white tracking-tight">{user?.email}</h3>
-          <div className="inline-flex items-center gap-1.5 px-3 py-1 bg-indigo-500/10 border border-indigo-500/20 rounded-full backdrop-blur-md">
-            <Zap size={12} className="text-indigo-500" fill="currentColor" />
-            <span className="text-[10px] font-bold text-indigo-500 uppercase tracking-widest">Premium Member</span>
-          </div>
+        <div className="mt-6 space-y-2 w-full px-6">
+          {isEditing ? (
+            <div className="space-y-4 max-w-sm mx-auto">
+              <input 
+                type="text"
+                value={profile.displayName}
+                onChange={(e) => setProfile(prev => ({ ...prev, displayName: e.target.value }))}
+                placeholder="Display Name"
+                className="w-full bg-white/5 border border-indigo-500/30 rounded-2xl px-4 py-3 text-white text-center outline-none focus:border-indigo-500 transition-all"
+              />
+              <input 
+                type="text"
+                value={profile.phoneNumber}
+                onChange={(e) => setProfile(prev => ({ ...prev, phoneNumber: e.target.value }))}
+                placeholder="Phone Number"
+                className="w-full bg-white/5 border border-indigo-500/30 rounded-2xl px-4 py-3 text-white text-center outline-none focus:border-indigo-500 transition-all"
+              />
+              <textarea 
+                value={profile.bio}
+                onChange={(e) => setProfile(prev => ({ ...prev, bio: e.target.value }))}
+                placeholder="Add a short bio..."
+                className="w-full bg-white/5 border border-indigo-500/30 rounded-2xl px-4 py-3 text-white text-center outline-none focus:border-indigo-500 transition-all resize-none h-20"
+              />
+              <div className="flex gap-3">
+                <Button variant="ghost" className="flex-1" onClick={() => setIsEditing(false)}>Cancel</Button>
+                <Button variant="gradient" className="flex-1" onClick={handleSaveProfile}>Save Changes</Button>
+              </div>
+            </div>
+          ) : (
+            <>
+              <h3 className="text-2xl font-bold text-white tracking-tight">
+                {profile.displayName || user?.email?.split('@')[0]}
+              </h3>
+              {profile.bio && <p className="text-slate-400 text-sm max-w-xs mx-auto">{profile.bio}</p>}
+              <div className="flex items-center justify-center gap-3">
+                <div className="inline-flex items-center gap-1.5 px-3 py-1 bg-indigo-500/10 border border-indigo-500/20 rounded-full backdrop-blur-md">
+                  <Zap size={12} className="text-indigo-500" fill="currentColor" />
+                  <span className="text-[10px] font-bold text-indigo-500 uppercase tracking-widest">Premium Member</span>
+                </div>
+                <button 
+                  onClick={() => setIsEditing(true)}
+                  className="p-2 bg-white/5 rounded-full text-slate-400 hover:text-white transition-colors"
+                >
+                  <Edit2 size={14} />
+                </button>
+              </div>
+            </>
+          )}
         </div>
 
         {/* Quick Stats */}
         <div className="grid grid-cols-3 gap-8 w-full mt-10 px-4">
           <div className="text-center space-y-1">
-            <p className="text-xl font-bold text-white">{transactions.length}</p>
+            <p className={cn("text-xl font-bold", isDark ? "text-white" : "text-slate-900")}>{transactions.length}</p>
             <p className="text-[10px] text-slate-500 font-bold uppercase tracking-widest">Transactions</p>
           </div>
-          <div className="text-center space-y-1 border-x border-white/5">
-            <p className="text-xl font-bold text-white">{savingsRate}%</p>
+          <div className={cn("text-center space-y-1 border-x", isDark ? "border-white/5" : "border-slate-100")}>
+            <p className={cn("text-xl font-bold", isDark ? "text-white" : "text-slate-900")}>{savingsRate}%</p>
             <p className="text-[10px] text-slate-500 font-bold uppercase tracking-widest">Savings Rate</p>
           </div>
           <div className="text-center space-y-1">
-            <p className="text-xl font-bold text-white">128</p>
+            <p className={cn("text-xl font-bold", isDark ? "text-white" : "text-slate-900")}>128</p>
             <p className="text-[10px] text-slate-500 font-bold uppercase tracking-widest">AI Queries</p>
           </div>
         </div>
@@ -1262,7 +1602,12 @@ const ProfilePage = ({ transactions }: { transactions: any[] }) => {
       {/* Settings Groups */}
       <div className="space-y-8 px-2">
         <SettingGroup title="Account">
-          <SettingRow icon={SettingsIcon} label="Profile Details" value="Personal Information" />
+          <SettingRow 
+            icon={SettingsIcon} 
+            label="Profile Details" 
+            value={profile.phoneNumber || "Add phone number"} 
+            onClick={() => setIsEditing(true)}
+          />
           <SettingRow icon={CreditCard} label="Connected Bank" value="HDFC Bank •••• 4242" />
           <SettingRow icon={Crown} label="Subscription" value="Premium Plan • Active" color="text-amber-500" />
         </SettingGroup>
@@ -1286,8 +1631,40 @@ const ProfilePage = ({ transactions }: { transactions: any[] }) => {
               </button>
             }
           />
-          <SettingRow icon={DollarSign} label="Currency" value="USD ($)" />
+          <SettingRow 
+            icon={DollarSign} 
+            label="Currency" 
+            value={currency === 'INR' ? 'Indian Rupee (₹)' : 'US Dollar ($)'} 
+            onClick={() => setCurrency(currency === 'INR' ? 'USD' : 'INR')}
+          />
           <SettingRow icon={Globe} label="Language" value="English" />
+          <SettingRow 
+            icon={DollarSign} 
+            label="Weekly Budget" 
+            value={currency === 'INR' ? `₹${weeklyBudget}` : `$${weeklyBudget}`} 
+            onClick={() => {
+              setTempBudget(weeklyBudget.toString());
+              setIsBudgetModalOpen(true);
+            }}
+          />
+          <SettingRow 
+            icon={Bell} 
+            label="Push Notifications" 
+            rightContent={
+              <button 
+                onClick={(e) => { e.stopPropagation(); handleToggleNotifications(); }}
+                className={cn(
+                  "w-10 h-5 rounded-full transition-all relative",
+                  notificationsEnabled ? "bg-indigo-600" : "bg-slate-700"
+                )}
+              >
+                <motion.div 
+                  animate={{ x: notificationsEnabled ? 22 : 2 }}
+                  className="absolute top-1 w-3 h-3 bg-white rounded-full shadow-sm" 
+                />
+              </button>
+            }
+          />
         </SettingGroup>
 
         <SettingGroup title="AI Settings">
@@ -1303,10 +1680,186 @@ const ProfilePage = ({ transactions }: { transactions: any[] }) => {
         </SettingGroup>
 
         <div className="pt-4 space-y-2">
-          <SettingRow icon={LogOut} label="Sign Out" isRed onClick={logout} />
+          <SettingRow icon={LogOut} label="Sign Out" isRed onClick={() => setIsLogoutModalOpen(true)} />
           <SettingRow icon={Trash} label="Delete Account" isRed />
         </div>
       </div>
+
+      {/* Budget Selection Modal */}
+      <AnimatePresence>
+        {isBudgetModalOpen && (
+          <>
+            <motion.div 
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              onClick={() => setIsBudgetModalOpen(false)}
+              className="fixed inset-0 bg-black/60 backdrop-blur-sm z-[100]"
+            />
+            <motion.div
+              initial={{ scale: 0.9, opacity: 0, y: 20 }}
+              animate={{ scale: 1, opacity: 1, y: 0 }}
+              exit={{ scale: 0.9, opacity: 0, y: 20 }}
+              className={cn(
+                "fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[90%] max-w-sm border rounded-[32px] p-8 z-[101] shadow-2xl transition-colors",
+                isDark ? "bg-[#050505] border-white/10" : "bg-white border-slate-200"
+              )}
+            >
+              <div className="w-16 h-16 bg-indigo-500/10 rounded-3xl flex items-center justify-center text-indigo-500 mx-auto mb-6">
+                <DollarSign size={32} strokeWidth={1.5} />
+              </div>
+              <h3 className={cn("text-xl font-bold text-center mb-2", isDark ? "text-white" : "text-slate-900")}>Weekly Budget</h3>
+              <p className="text-slate-500 text-center text-sm mb-8 leading-relaxed">
+                Set your target weekly spending limit. We'll help you stay on track.
+              </p>
+              
+              <div className="relative mb-8">
+                <span className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 font-bold">
+                  {currency === 'INR' ? '₹' : '$'}
+                </span>
+                <input 
+                  type="number"
+                  value={tempBudget}
+                  onChange={(e) => setTempBudget(e.target.value)}
+                  className={cn(
+                    "w-full pl-10 pr-4 py-4 rounded-2xl border font-bold text-lg outline-none focus:ring-2 focus:ring-indigo-500 transition-all",
+                    isDark ? "bg-white/5 border-white/10 text-white" : "bg-slate-50 border-slate-200 text-slate-900"
+                  )}
+                  placeholder="Enter amount"
+                />
+              </div>
+
+              <div className="flex flex-col gap-3">
+                <button 
+                  onClick={() => {
+                    const val = parseInt(tempBudget, 10);
+                    if (!isNaN(val) && val > 0) {
+                      setWeeklyBudget(val);
+                      setIsBudgetModalOpen(false);
+                    }
+                  }}
+                  className="w-full py-4 bg-indigo-600 hover:bg-indigo-700 text-white font-bold rounded-2xl transition-all active:scale-95"
+                >
+                  Save Budget
+                </button>
+                <button 
+                  onClick={() => setIsBudgetModalOpen(false)}
+                  className={cn(
+                    "w-full py-4 font-bold rounded-2xl transition-all",
+                    isDark ? "bg-white/5 text-slate-300 hover:bg-white/10" : "bg-slate-100 text-slate-600 hover:bg-slate-200"
+                  )}
+                >
+                  Cancel
+                </button>
+              </div>
+            </motion.div>
+          </>
+        )}
+      </AnimatePresence>
+
+      {/* Logout Confirmation Modal */}
+      <AnimatePresence>
+        {isLogoutModalOpen && (
+          <>
+            <motion.div 
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              onClick={() => setIsLogoutModalOpen(false)}
+              className="fixed inset-0 bg-black/60 backdrop-blur-sm z-[100]"
+            />
+            <motion.div
+              initial={{ scale: 0.9, opacity: 0, y: 20 }}
+              animate={{ scale: 1, opacity: 1, y: 0 }}
+              exit={{ scale: 0.9, opacity: 0, y: 20 }}
+              className={cn(
+                "fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[90%] max-w-sm border rounded-[32px] p-8 z-[101] shadow-2xl transition-colors",
+                isDark ? "bg-[#050505] border-white/10" : "bg-white border-slate-200"
+              )}
+            >
+              <div className="w-16 h-16 bg-rose-500/10 rounded-3xl flex items-center justify-center text-rose-500 mx-auto mb-6">
+                <LogOut size={32} strokeWidth={1.5} />
+              </div>
+              <h3 className={cn("text-xl font-bold text-center mb-2", isDark ? "text-white" : "text-slate-900")}>Sign Out?</h3>
+              <p className="text-slate-500 text-center text-sm mb-8 leading-relaxed">
+                Are you sure you want to sign out of your account? You'll need to log back in to access your data.
+              </p>
+              <div className="flex flex-col gap-3">
+                <button 
+                  onClick={() => {
+                    setIsLogoutModalOpen(false);
+                    logout();
+                  }}
+                  className="w-full py-4 bg-rose-500 hover:bg-rose-600 text-white font-bold rounded-2xl transition-all active:scale-95"
+                >
+                  Sign Out
+                </button>
+                <button 
+                  onClick={() => setIsLogoutModalOpen(false)}
+                  className={cn(
+                    "w-full py-4 font-bold rounded-2xl transition-all",
+                    isDark ? "bg-white/5 text-slate-300 hover:bg-white/10" : "bg-slate-100 text-slate-600 hover:bg-slate-200"
+                  )}
+                >
+                  Cancel
+                </button>
+              </div>
+            </motion.div>
+          </>
+        )}
+      </AnimatePresence>
+
+      {/* Avatar Selection Modal */}
+      <AnimatePresence>
+        {isAvatarModalOpen && (
+          <>
+            <motion.div 
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              onClick={() => setIsAvatarModalOpen(false)}
+              className="fixed inset-0 bg-black/60 backdrop-blur-xl z-[100]"
+            />
+            <motion.div
+              initial={{ y: "100%" }}
+              animate={{ y: 0 }}
+              exit={{ y: "100%" }}
+              transition={{ type: "spring", damping: 25, stiffness: 200 }}
+              className="fixed bottom-0 left-0 right-0 max-h-[70vh] bg-[#050505] border-t border-white/10 rounded-t-[40px] z-[101] p-8 overflow-y-auto"
+            >
+              <div className="w-12 h-1.5 bg-slate-800 rounded-full mx-auto mb-8" />
+              <h3 className="text-xl font-bold text-white text-center mb-8">Choose Your Avatar</h3>
+              
+              <div className="grid grid-cols-4 gap-6">
+                {avatars.map((avatar) => (
+                  <motion.button
+                    key={avatar.name}
+                    whileHover={{ scale: 1.1 }}
+                    whileTap={{ scale: 0.9 }}
+                    onClick={() => handleAvatarSelect(avatar.name)}
+                    className={cn(
+                      "aspect-square rounded-3xl flex flex-col items-center justify-center gap-2 transition-all",
+                      profile.avatar === avatar.name ? "bg-indigo-600/20 border-2 border-indigo-500" : "bg-white/5 border border-white/5"
+                    )}
+                  >
+                    <avatar.icon size={28} className={avatar.color} />
+                    <span className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">{avatar.name}</span>
+                    {profile.avatar === avatar.name && (
+                      <div className="absolute top-2 right-2 w-4 h-4 bg-indigo-500 rounded-full flex items-center justify-center">
+                        <Check size={10} className="text-white" />
+                      </div>
+                    )}
+                  </motion.button>
+                ))}
+              </div>
+
+              <div className="mt-10">
+                <Button variant="ghost" className="w-full" onClick={() => setIsAvatarModalOpen(false)}>Close</Button>
+              </div>
+            </motion.div>
+          </>
+        )}
+      </AnimatePresence>
     </div>
   );
 };
@@ -1315,6 +1868,7 @@ const ProfilePage = ({ transactions }: { transactions: any[] }) => {
 
 export default function App() {
   const { user, isLoading } = useAuth();
+  const { isDark, colors } = useTheme();
   const [isSplashVisible, setIsSplashVisible] = useState(true);
   const [activeTab, setActiveTab] = useState('dashboard');
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
@@ -1323,8 +1877,9 @@ export default function App() {
   const [deletingId, setDeletingId] = useState<string | null>(null);
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
   const [transactionToDelete, setTransactionToDelete] = useState<string | null>(null);
-  const [weeklyBudget, setWeeklyBudget] = useState(500);
+  const { weeklyBudget } = useSettings();
   const [budgetInsight, setBudgetInsight] = useState('');
+  const [hasUnreadNotifications, setHasUnreadNotifications] = useState(false);
 
   // Form state
   const [amount, setAmount] = useState('');
@@ -1343,8 +1898,16 @@ export default function App() {
   useEffect(() => {
     if (user) {
       loadTransactions();
+      notificationService.scheduleDailyReminder();
     }
-  }, [user]);
+  }, [user, weeklyBudget]);
+
+  useEffect(() => {
+    if (budgetInsight && budgetInsight.includes('Heads up') || budgetInsight.includes('warning')) {
+      setHasUnreadNotifications(true);
+      notificationService.sendLocalNotification('⚠️ Budget Alert', budgetInsight);
+    }
+  }, [budgetInsight]);
 
   const loadTransactions = async () => {
     if (!user) return;
@@ -1371,6 +1934,9 @@ export default function App() {
         date,
         description
       });
+      
+      notificationService.sendLocalNotification('Transaction Added', `Successfully added ${category} expense of ${parseFloat(amount)}`);
+      
       setIsAddModalOpen(false);
       setAmount('');
       setDescription('');
@@ -1424,8 +1990,11 @@ export default function App() {
   ];
 
   return (
-    <div className="min-h-screen bg-[#FAFAFA] dark:bg-[#050505] flex flex-col">
-      <StickyHeader />
+    <div 
+      className="min-h-screen flex flex-col transition-colors duration-300"
+      style={{ backgroundColor: colors.bg }}
+    >
+      <StickyHeader hasUnreadNotifications={hasUnreadNotifications} />
       
       {/* Main Content */}
       <main className="flex-1 max-w-2xl mx-auto w-full p-6 md:p-8">
@@ -1451,7 +2020,7 @@ export default function App() {
                 deletingId={deletingId}
               />
             )}
-            {activeTab === 'reports' && <ReportsPage transactions={transactions} />}
+            {activeTab === 'reports' && <ReportsPage transactions={transactions} weeklyBudget={weeklyBudget} />}
             {activeTab === 'profile' && <ProfilePage transactions={transactions} />}
           </motion.div>
         </AnimatePresence>
@@ -1468,7 +2037,10 @@ export default function App() {
       </motion.button>
 
       {/* Bottom Tab Bar */}
-      <nav className="fixed bottom-6 left-6 right-6 h-20 bg-white/80 dark:bg-black/80 backdrop-blur-[25px] rounded-[32px] flex items-center justify-around px-4 z-50 shadow-2xl border border-white/10">
+      <nav className={cn(
+        "fixed bottom-6 left-6 right-6 h-20 backdrop-blur-[25px] rounded-[32px] flex items-center justify-around px-4 z-50 shadow-2xl border transition-all",
+        isDark ? "bg-black/80 border-white/10" : "bg-white/80 border-slate-200"
+      )}>
         {tabs.map(tab => (
           tab.special ? (
             <button
@@ -1479,17 +2051,26 @@ export default function App() {
               <Plus size={32} strokeWidth={1.5} />
             </button>
           ) : (
-            <button
+            <motion.button
               key={tab.id}
-              onClick={() => setActiveTab(tab.id)}
+              whileTap={{ scale: 0.9 }}
+              animate={{ 
+                scale: activeTab === tab.id ? 1.1 : 1,
+                filter: activeTab === tab.id ? "grayscale(0%)" : "grayscale(80%)",
+                opacity: activeTab === tab.id ? 1 : 0.6
+              }}
+              onClick={() => {
+                triggerHaptic(5);
+                setActiveTab(tab.id);
+              }}
               className={cn(
-                "flex flex-col items-center gap-1 transition-all",
-                activeTab === tab.id ? "text-indigo-500 scale-110" : "text-slate-400"
+                "flex flex-col items-center gap-1 transition-colors",
+                activeTab === tab.id ? "text-indigo-500" : "text-slate-400"
               )}
             >
-              <tab.icon size={22} strokeWidth={1.2} />
+              <tab.icon size={22} strokeWidth={1.2} color={!isDark && activeTab !== tab.id ? "#0f172a" : undefined} />
               <span className="text-[10px] font-bold uppercase tracking-tighter">{tab.label}</span>
-            </button>
+            </motion.button>
           )
         ))}
       </nav>
@@ -1516,13 +2097,16 @@ export default function App() {
               initial={{ scale: 0.9, opacity: 0, y: 20 }}
               animate={{ scale: 1, opacity: 1, y: 0 }}
               exit={{ scale: 0.9, opacity: 0, y: 20 }}
-              className="fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[90%] max-w-sm bg-[#050505] border border-white/10 rounded-[32px] p-8 z-[101] shadow-2xl"
+              className={cn(
+                "fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[90%] max-w-sm border rounded-[32px] p-8 z-[101] shadow-2xl transition-colors",
+                isDark ? "bg-[#050505] border-white/10" : "bg-white border-slate-200"
+              )}
             >
               <div className="w-16 h-16 bg-rose-500/10 rounded-3xl flex items-center justify-center text-rose-500 mx-auto mb-6">
                 <Trash2 size={32} strokeWidth={1.5} />
               </div>
-              <h3 className="text-xl font-bold text-white text-center mb-2">Delete Transaction?</h3>
-              <p className="text-slate-400 text-center text-sm mb-8 leading-relaxed">
+              <h3 className={cn("text-xl font-bold text-center mb-2", isDark ? "text-white" : "text-slate-900")}>Delete Transaction?</h3>
+              <p className="text-slate-500 text-center text-sm mb-8 leading-relaxed">
                 This action cannot be undone. This record will be permanently removed from your history.
               </p>
               <div className="flex flex-col gap-3">
@@ -1534,7 +2118,10 @@ export default function App() {
                 </button>
                 <button 
                   onClick={() => setIsDeleteModalOpen(false)}
-                  className="w-full py-4 bg-white/5 hover:bg-white/10 text-slate-300 font-bold rounded-2xl transition-all"
+                  className={cn(
+                    "w-full py-4 font-bold rounded-2xl transition-all",
+                    isDark ? "bg-white/5 text-slate-300 hover:bg-white/10" : "bg-slate-100 text-slate-600 hover:bg-slate-200"
+                  )}
                 >
                   Cancel
                 </button>
@@ -1560,13 +2147,16 @@ export default function App() {
               animate={{ y: 0 }}
               exit={{ y: "100%" }}
               transition={{ type: "spring", damping: 25, stiffness: 200 }}
-              className="relative w-full max-w-lg bg-white dark:bg-[#050505] rounded-t-[40px] sm:rounded-[40px] overflow-hidden shadow-2xl"
+              className={cn(
+                "relative w-full max-w-lg rounded-t-[40px] sm:rounded-[40px] overflow-hidden shadow-2xl transition-colors",
+                isDark ? "bg-[#050505]" : "bg-white"
+              )}
             >
-              <div className="w-12 h-1.5 bg-slate-200 dark:bg-slate-800 rounded-full mx-auto mt-4 mb-2 sm:hidden" />
+              <div className={cn("w-12 h-1.5 rounded-full mx-auto mt-4 mb-2 sm:hidden", isDark ? "bg-slate-800" : "bg-slate-200")} />
               <div className="p-8 sm:p-10">
                 <div className="flex justify-between items-center mb-8">
-                  <h2 className="text-3xl font-bold dark:text-white tracking-tight">New Entry</h2>
-                  <button onClick={() => setIsAddModalOpen(false)} className="p-2 bg-slate-100 dark:bg-slate-900 rounded-full transition-colors dark:text-white">
+                  <h2 className={cn("text-3xl font-bold tracking-tight", isDark ? "text-white" : "text-slate-900")}>New Entry</h2>
+                  <button onClick={() => setIsAddModalOpen(false)} className={cn("p-2 rounded-full transition-colors", isDark ? "bg-slate-900 text-white" : "bg-slate-100 text-slate-900")}>
                     <X size={20} strokeWidth={1.2} />
                   </button>
                 </div>

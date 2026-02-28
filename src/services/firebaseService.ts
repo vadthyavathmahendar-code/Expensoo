@@ -95,5 +95,13 @@ export const firebaseService = {
 
   deleteTransaction: async (id: string) => {
     await deleteDoc(doc(db, 'transactions', id));
+  },
+
+  updatePushToken: async (userId: string, token: string) => {
+    const userRef = doc(db, 'users', userId);
+    await updateDoc(userRef, {
+      pushToken: token,
+      updatedAt: Timestamp.now()
+    });
   }
 };

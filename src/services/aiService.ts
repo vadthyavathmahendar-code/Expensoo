@@ -1,6 +1,13 @@
-import { GoogleGenAI, ThinkingLevel } from "@google/genai";
+import { GoogleGenAI, ThinkingLevel, Type } from "@google/genai";
 
 const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY || "" });
+
+export interface BudgetForecast {
+  predictedTotal: number;
+  confidence: number;
+  topPredictedCategories: { category: string; predictedAmount: number }[];
+  insights: string[];
+}
 
 const sleep = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
 
@@ -103,5 +110,66 @@ export async function getBudgetInsight(transactions: any[], weeklyBudget: number
   } catch (error) {
     console.warn("Budget Insight AI failed, using local fallback:", error);
     return calculateLocalInsight();
+  }
+}
+
+export async function getBudgetForecast(transactions: any[], weeklyBudget: number = 500): Promise<BudgetForecast | null> {
+  const model = "gemini-3.1-pro-preview";
+  
+  const systemInstruction = `
+    You are a financial forecasting expert for Expenso.
+    Analyze the user's transaction history and predict their spending for the NEXT 7 DAYS.
+    
+    Weekly Budget: $${weeklyBudget}
+    Transactions: ${JSON.stringify(transactions)}
+    Current Date: ${new Date().toISOString()}
+
+    Provide:
+    1. Predicted total spending for the next 7 days.
+    2. Confidence level (0.0 to 1.0).
+    3. Top 3 categories where they are likely to spend most.
+    4. 2-3 actionable insights to stay within budget.
+  `;
+
+  try {
+    const response = await withRetry(() => ai.models.generateContent({
+      model,
+      contents: "Generate a budget forecast for the next 7 days based on my history.",
+      config: {
+        systemInstruction,
+        responseMimeType: "application/json",
+        responseSchema: {
+          type: Type.OBJECT,
+          properties: {
+            predictedTotal: { type: Type.NUMBER },
+            confidence: { type: Type.NUMBER },
+            topPredictedCategories: {
+              type: Type.ARRAY,
+              items: {
+                type: Type.OBJECT,
+                properties: {
+                  category: { type: Type.STRING },
+                  predictedAmount: { type: Type.NUMBER }
+                },
+                required: ["category", "predictedAmount"]
+              }
+            },
+            insights: {
+              type: Type.ARRAY,
+              items: { type: Type.STRING }
+            }
+          },
+          required: ["predictedTotal", "confidence", "topPredictedCategories", "insights"]
+        },
+        thinkingConfig: {
+          thinkingLevel: ThinkingLevel.HIGH
+        }
+      },
+    }));
+    
+    return JSON.parse(response.text || "null");
+  } catch (error) {
+    console.error("Budget Forecast AI failed:", error);
+    return null;
   }
 }

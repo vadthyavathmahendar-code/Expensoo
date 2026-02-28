@@ -5,6 +5,8 @@ type Currency = 'INR' | 'USD';
 interface SettingsContextType {
   currency: Currency;
   setCurrency: (currency: Currency) => void;
+  weeklyBudget: number;
+  setWeeklyBudget: (budget: number) => void;
   formatAmount: (amount: number) => string;
 }
 
@@ -16,9 +18,18 @@ export function SettingsProvider({ children }: { children: React.ReactNode }) {
     return (saved as Currency) || 'INR';
   });
 
+  const [weeklyBudget, setWeeklyBudget] = useState<number>(() => {
+    const saved = localStorage.getItem('expenso_weekly_budget');
+    return saved ? parseInt(saved, 10) : 500;
+  });
+
   useEffect(() => {
     localStorage.setItem('expenso_currency', currency);
   }, [currency]);
+
+  useEffect(() => {
+    localStorage.setItem('expenso_weekly_budget', weeklyBudget.toString());
+  }, [weeklyBudget]);
 
   const formatAmount = (amount: number) => {
     const symbol = currency === 'INR' ? '₹' : '$';
@@ -26,7 +37,13 @@ export function SettingsProvider({ children }: { children: React.ReactNode }) {
   };
 
   return (
-    <SettingsContext.Provider value={{ currency, setCurrency, formatAmount }}>
+    <SettingsContext.Provider value={{ 
+      currency, 
+      setCurrency, 
+      weeklyBudget, 
+      setWeeklyBudget, 
+      formatAmount 
+    }}>
       {children}
     </SettingsContext.Provider>
   );
