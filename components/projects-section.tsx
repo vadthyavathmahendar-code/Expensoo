@@ -10,7 +10,7 @@ const projects = [
       "A community engagement platform that empowers citizens to report local issues, participate in community decisions, and connect with local governance. Features real-time updates, interactive maps, and a robust discussion forum.",
     techStack: ["React", "Node.js", "Express", "Supabase"],
     github: "https://github.com/vadthyavathmahendar-code/ccgovt",
-    demo: "ccgovt-2026.vercel.app",
+    demo: "https://ccgovt-2026.vercel.app/",
     featured: true,
   },
 
