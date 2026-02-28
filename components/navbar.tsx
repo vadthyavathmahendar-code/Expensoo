@@ -39,7 +39,7 @@ export function Navbar() {
 
   return (
     <header
-      className={`fixed top-0 left-0 right-0 z-50 transition-all duration-500 ease-[cubic-bezier(0.4,0,0.2,1)] ${isScrolled ? "glass py-3" : "bg-transparent py-5"
+      className={`fixed top-0 left-0 right-0 z-50 transition-all duration-500 ease-in-out${isScrolled ? "glass py-3" : "bg-transparent py-5"
         }`}
     >
       <nav className="mx-auto flex max-w-6xl items-center justify-between px-6">
@@ -60,14 +60,14 @@ export function Navbar() {
               <a
                 href={link.href}
                 className={`relative px-4 py-2 text-sm transition-colors duration-300 ${activeSection === link.href.replace("#", "")
-                    ? "text-primary"
-                    : "text-muted-foreground hover:text-primary"
+                  ? "text-primary"
+                  : "text-muted-foreground hover:text-primary"
                   }`}
               >
                 {link.name}
                 {/* Active indicator */}
                 <span
-                  className={`absolute bottom-0 left-1/2 h-0.5 -translate-x-1/2 rounded-full bg-primary transition-all duration-300 ease-[cubic-bezier(0.4,0,0.2,1)] ${activeSection === link.href.replace("#", "") ? "w-4" : "w-0"
+                  className={`absolute bottom-0 left-1/2 h-0.5 -translate-x-1/2 rounded-full bg-primary transition-all duration-300 ease-in-out ${activeSection === link.href.replace("#", "") ? "w-4" : "w-0"
                     }`}
                 />
               </a>
@@ -98,7 +98,7 @@ export function Navbar() {
 
       {/* Mobile Menu */}
       <div
-        className={`absolute left-4 right-4 top-full mt-2 overflow-hidden rounded-lg transition-all duration-500 ease-[cubic-bezier(0.4,0,0.2,1)] md:hidden ${isMobileMenuOpen ? "max-h-96 opacity-100" : "max-h-0 opacity-0"
+        className={`absolute left-4 right-4 top-full mt-2 overflow-hidden rounded-lg transition-all duration-500 ease-in-out md:hidden ${isMobileMenuOpen ? "max-h-96 opacity-100" : "max-h-0 opacity-0"
           }`}
       >
         <div className="glass p-4">
@@ -108,8 +108,8 @@ export function Navbar() {
                 <a
                   href={link.href}
                   className={`block rounded-lg px-4 py-3 text-sm transition-all duration-300 ${activeSection === link.href.replace("#", "")
-                      ? "bg-primary/10 text-primary"
-                      : "text-muted-foreground hover:bg-secondary/50 hover:text-primary"
+                    ? "bg-primary/10 text-primary"
+                    : "text-muted-foreground hover:bg-secondary/50 hover:text-primary"
                     }`}
                   onClick={() => setIsMobileMenuOpen(false)}
                   style={{ transitionDelay: isMobileMenuOpen ? `${index * 40}ms` : "0ms" }}

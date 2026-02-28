@@ -55,7 +55,7 @@ export function ContactSection() {
     <section id="contact" className="relative px-6 py-24" ref={sectionRef}>
       <div className="mx-auto max-w-4xl">
         <div
-          className={`mb-16 text-center transition-all duration-700 ease-[cubic-bezier(0.4,0,0.2,1)] ${isVisible ? "translate-y-0 opacity-100" : "translate-y-8 opacity-0"
+          className={`mb-16 text-center transition-all duration-700 ease-in-out ${isVisible ? "translate-y-0 opacity-100" : "translate-y-8 opacity-0"
             }`}
         >
           <h2 className="mb-4 text-3xl font-bold text-foreground md:text-4xl">
@@ -63,7 +63,7 @@ export function ContactSection() {
           </h2>
           <div className="mx-auto h-1 w-20 overflow-hidden rounded-full bg-secondary">
             <div
-              className={`h-full bg-gradient-to-r from-primary to-accent transition-all duration-1000 ease-out ${isVisible ? "w-full" : "w-0"
+              className={`h-full bg-linear-to-r from-primary to-accent transition-all duration-1000 ease-out ${isVisible ? "w-full" : "w-0"
                 }`}
             />
           </div>
@@ -75,7 +75,7 @@ export function ContactSection() {
         <div className="grid gap-8 lg:grid-cols-2">
           {/* Contact Form */}
           <div
-            className={`transition-all duration-700 ease-[cubic-bezier(0.4,0,0.2,1)] ${isVisible ? "translate-x-0 opacity-100" : "-translate-x-8 opacity-0"
+            className={`transition-all duration-700 ease-in-out ${isVisible ? "translate-x-0 opacity-100" : "-translate-x-8 opacity-0"
               }`}
             style={{ transitionDelay: "200ms" }}
           >
@@ -131,7 +131,7 @@ export function ContactSection() {
                 />
                 <label
                   htmlFor="message"
-                  className={`pointer-events-none absolute left-4 text-muted-foreground transition-all duration-300 ease-[cubic-bezier(0.4,0,0.2,1)] ${focusedField === "message" || formState.message
+                  className={`pointer-events-none absolute left-4 text-muted-foreground transition-all duration-300 ease-in-out ${focusedField === "message" || formState.message
                     ? "top-2 text-xs text-primary"
                     : "top-4 text-sm"
                     }`}
@@ -170,14 +170,14 @@ export function ContactSection() {
                     </>
                   )}
                 </span>
-                <span className="absolute inset-0 -translate-x-full bg-gradient-to-r from-transparent via-white/20 to-transparent transition-transform duration-700 group-hover:translate-x-full" />
+                <span className="absolute inset-0 -translate-x-full bg-linear-to-r from-transparent via-white/20 to-transparent transition-transform duration-700 group-hover:translate-x-full" />
               </button>
             </form>
           </div>
 
           {/* Contact Info */}
           <div
-            className={`flex flex-col justify-center gap-6 transition-all duration-700 ease-[cubic-bezier(0.4,0,0.2,1)] ${isVisible ? "translate-x-0 opacity-100" : "translate-x-8 opacity-0"
+            className={`flex flex-col justify-center gap-6 transition-all duration-700 ease-in-out ${isVisible ? "translate-x-0 opacity-100" : "translate-x-8 opacity-0"
               }`}
             style={{ transitionDelay: "400ms" }}
           >
@@ -196,7 +196,7 @@ export function ContactSection() {
                   <MagneticButton
                     key={item.text}
                     href={item.href}
-                    className={`group flex items-center gap-3 text-muted-foreground transition-all duration-300 ease-[cubic-bezier(0.4,0,0.2,1)] hover:text-primary ${isVisible ? "translate-x-0 opacity-100" : "translate-x-4 opacity-0"
+                    className={`group flex items-center gap-3 text-muted-foreground transition-all duration-300 ease-in-out hover:text-primary ${isVisible ? "translate-x-0 opacity-100" : "translate-x-4 opacity-0"
                       }`}
                     strength={0.15}
                   >

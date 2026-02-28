@@ -33,9 +33,8 @@ export function PageLoader({ children }: { children: React.ReactNode }) {
     <LoaderContext.Provider value={{ isVisible }}>
       {/* Loading Screen */}
       <div
-        className={`fixed inset-0 z-[200] flex items-center justify-center bg-background transition-all duration-700 ease-[cubic-bezier(0.4,0,0.2,1)] ${
-          isLoading ? "opacity-100" : "pointer-events-none opacity-0"
-        }`}
+        className={`fixed inset-0 z-100  flex items-center justify-center bg-background transition-all duration-700 ease-in-out ${isLoading ? "opacity-100" : "pointer-events-none opacity-0"
+          }`}
       >
         <div className="flex flex-col items-center gap-4">
           <div className="relative h-12 w-12">
@@ -49,9 +48,8 @@ export function PageLoader({ children }: { children: React.ReactNode }) {
 
       {/* Main Content - no transform to preserve fixed positioning */}
       <div
-        className={`transition-opacity duration-1000 ease-[cubic-bezier(0.4,0,0.2,1)] ${
-          isVisible ? "opacity-100" : "opacity-0"
-        }`}
+        className={`transition-opacity duration-1000 ease-in-out ${isVisible ? "opacity-100" : "opacity-0"
+          }`}
       >
         {children}
       </div>

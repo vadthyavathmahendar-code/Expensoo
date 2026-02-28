@@ -41,7 +41,7 @@ export function Footer() {
       </div>
 
       {/* Subtle gradient line at top */}
-      <div className="absolute left-0 right-0 top-0 h-px bg-gradient-to-r from-transparent via-primary/30 to-transparent" />
+      <div className="absolute left-0 right-0 top-0 h-px bg-linear-to-r from-transparent via-primary/30 to-transparent" />
     </footer>
   )
 }

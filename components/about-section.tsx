@@ -49,7 +49,7 @@ export function AboutSection() {
     <section id="about" className="relative px-6 py-24" ref={sectionRef}>
       <div className="mx-auto max-w-6xl">
         <div
-          className={`mb-16 text-center transition-all duration-700 ease-[cubic-bezier(0.4,0,0.2,1)] ${isVisible ? "translate-y-0 opacity-100" : "translate-y-8 opacity-0"
+          className={`mb-16 text-center transition-all duration-700 ease-in-out ${isVisible ? "translate-y-0 opacity-100" : "translate-y-8 opacity-0"
             }`}
         >
           <h2 className="mb-4 text-3xl font-bold text-foreground md:text-4xl">
@@ -57,7 +57,7 @@ export function AboutSection() {
           </h2>
           <div className="mx-auto h-1 w-20 overflow-hidden rounded-full bg-secondary">
             <div
-              className={`h-full bg-gradient-to-r from-primary to-accent transition-all duration-1000 ease-out ${isVisible ? "w-full" : "w-0"
+              className={`h-full bg-linear-to-r from-primary to-accent transition-all duration-1000 ease-out ${isVisible ? "w-full" : "w-0"
                 }`}
             />
           </div>
@@ -66,7 +66,7 @@ export function AboutSection() {
         <div className="grid gap-12 lg:grid-cols-2">
           {/* Left - About Text */}
           <div
-            className={`transition-all duration-700 ease-[cubic-bezier(0.4,0,0.2,1)] ${isVisible ? "translate-x-0 opacity-100" : "-translate-x-8 opacity-0"
+            className={`transition-all duration-700 ease-in-out ${isVisible ? "translate-x-0 opacity-100" : "-translate-x-8 opacity-0"
               }`}
             style={{ transitionDelay: "200ms" }}
           >
@@ -90,7 +90,7 @@ export function AboutSection() {
               {skillBars.map((skill, i) => (
                 <div
                   key={skill.name}
-                  className={`transition-all duration-500 ease-[cubic-bezier(0.4,0,0.2,1)] ${isVisible ? "translate-x-0 opacity-100" : "-translate-x-4 opacity-0"
+                  className={`transition-all duration-500 ease-in-out ${isVisible ? "translate-x-0 opacity-100" : "-translate-x-4 opacity-0"
                     }`}
                   style={{ transitionDelay: `${i * 100 + 400}ms` }}
                 >
@@ -100,14 +100,14 @@ export function AboutSection() {
                   </div>
                   <div className="h-2 overflow-hidden rounded-full bg-secondary">
                     <div
-                      className="relative h-full rounded-full bg-gradient-to-r from-primary to-accent transition-all duration-1000 ease-[cubic-bezier(0.4,0,0.2,1)]"
+                      className="relative h-full rounded-full bg-linear-to-r from-primary to-accent transition-all duration-1000 ease-in-out"
                       style={{
                         width: isVisible ? `${skill.level}%` : "0%",
                         transitionDelay: `${i * 150 + 600}ms`,
                       }}
                     >
                       {/* Shimmer effect */}
-                      <div className="absolute inset-0 -translate-x-full animate-[shimmer_2s_infinite] bg-gradient-to-r from-transparent via-white/20 to-transparent" />
+                      <div className="absolute inset-0 -translate-x-full animate-[shimmer_2s_infinite] bg-linear-to-r from-transparent via-white/20 to-transparent" />
                     </div>
                   </div>
                 </div>
@@ -117,7 +117,7 @@ export function AboutSection() {
 
           {/* Right - Highlight Cards */}
           <div
-            className={`flex flex-col gap-4 transition-all duration-700 ease-[cubic-bezier(0.4,0,0.2,1)] ${isVisible ? "translate-x-0 opacity-100" : "translate-x-8 opacity-0"
+            className={`flex flex-col gap-4 transition-all duration-700 ease-in-out ${isVisible ? "translate-x-0 opacity-100" : "translate-x-8 opacity-0"
               }`}
             style={{ transitionDelay: "400ms" }}
           >
@@ -126,7 +126,7 @@ export function AboutSection() {
                 key={item.title}
                 onMouseEnter={() => setHoveredCard(i)}
                 onMouseLeave={() => setHoveredCard(null)}
-                className={`glass group relative overflow-hidden rounded-xl p-6 transition-all duration-500 ease-[cubic-bezier(0.4,0,0.2,1)] hover:border-primary/30 ${isVisible ? "translate-y-0 opacity-100" : "translate-y-8 opacity-0"
+                className={`glass group relative overflow-hidden rounded-xl p-6 transition-all duration-500 ease-in-out hover:border-primary/30 ${isVisible ? "translate-y-0 opacity-100" : "translate-y-8 opacity-0"
                   }`}
                 style={{
                   transitionDelay: `${i * 100 + 500}ms`,
@@ -134,7 +134,7 @@ export function AboutSection() {
                 }}
               >
                 {/* Hover glow */}
-                <div className="pointer-events-none absolute inset-0 bg-gradient-to-r from-primary/0 via-primary/5 to-accent/0 opacity-0 transition-opacity duration-500 group-hover:opacity-100" />
+                <div className="pointer-events-none absolute inset-0 bg-linear-to-r from-primary/0 via-primary/5 to-accent/0 opacity-0 transition-opacity duration-500 group-hover:opacity-100" />
 
                 <div className="relative z-10">
                   <div className="mb-3 flex items-center gap-3">
