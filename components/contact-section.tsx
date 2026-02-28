@@ -40,35 +40,31 @@ export function ContactSection() {
   }
 
   const inputClasses = (field: string) =>
-    `peer w-full rounded-lg border bg-secondary/40 px-4 py-3 pt-6 text-sm text-foreground placeholder-transparent outline-none transition-all duration-300 ease-[cubic-bezier(0.4,0,0.2,1)] ${
-      focusedField === field || formState[field as keyof typeof formState]
-        ? "border-primary"
-        : "border-border"
+    `peer w-full rounded-lg border bg-secondary/40 px-4 py-3 pt-6 text-sm text-foreground placeholder-transparent outline-none transition-all duration-300 ease-[cubic-bezier(0.4,0,0.2,1)] ${focusedField === field || formState[field as keyof typeof formState]
+      ? "border-primary"
+      : "border-border"
     } focus:border-primary focus:bg-secondary/60`
 
   const labelClasses = (field: string) =>
-    `pointer-events-none absolute left-4 text-muted-foreground transition-all duration-300 ease-[cubic-bezier(0.4,0,0.2,1)] ${
-      focusedField === field || formState[field as keyof typeof formState]
-        ? "top-2 text-xs text-primary"
-        : "top-1/2 -translate-y-1/2 text-sm"
+    `pointer-events-none absolute left-4 text-muted-foreground transition-all duration-300 ease-[cubic-bezier(0.4,0,0.2,1)] ${focusedField === field || formState[field as keyof typeof formState]
+      ? "top-2 text-xs text-primary"
+      : "top-1/2 -translate-y-1/2 text-sm"
     }`
 
   return (
     <section id="contact" className="relative px-6 py-24" ref={sectionRef}>
       <div className="mx-auto max-w-4xl">
         <div
-          className={`mb-16 text-center transition-all duration-700 ease-[cubic-bezier(0.4,0,0.2,1)] ${
-            isVisible ? "translate-y-0 opacity-100" : "translate-y-8 opacity-0"
-          }`}
+          className={`mb-16 text-center transition-all duration-700 ease-[cubic-bezier(0.4,0,0.2,1)] ${isVisible ? "translate-y-0 opacity-100" : "translate-y-8 opacity-0"
+            }`}
         >
           <h2 className="mb-4 text-3xl font-bold text-foreground md:text-4xl">
             Get in <span className="text-gradient">Touch</span>
           </h2>
           <div className="mx-auto h-1 w-20 overflow-hidden rounded-full bg-secondary">
             <div
-              className={`h-full bg-gradient-to-r from-primary to-accent transition-all duration-1000 ease-out ${
-                isVisible ? "w-full" : "w-0"
-              }`}
+              className={`h-full bg-gradient-to-r from-primary to-accent transition-all duration-1000 ease-out ${isVisible ? "w-full" : "w-0"
+                }`}
             />
           </div>
           <p className="mx-auto mt-4 max-w-lg text-muted-foreground">
@@ -79,9 +75,8 @@ export function ContactSection() {
         <div className="grid gap-8 lg:grid-cols-2">
           {/* Contact Form */}
           <div
-            className={`transition-all duration-700 ease-[cubic-bezier(0.4,0,0.2,1)] ${
-              isVisible ? "translate-x-0 opacity-100" : "-translate-x-8 opacity-0"
-            }`}
+            className={`transition-all duration-700 ease-[cubic-bezier(0.4,0,0.2,1)] ${isVisible ? "translate-x-0 opacity-100" : "-translate-x-8 opacity-0"
+              }`}
             style={{ transitionDelay: "200ms" }}
           >
             <form onSubmit={handleSubmit} className="glass rounded-xl p-6">
@@ -136,11 +131,10 @@ export function ContactSection() {
                 />
                 <label
                   htmlFor="message"
-                  className={`pointer-events-none absolute left-4 text-muted-foreground transition-all duration-300 ease-[cubic-bezier(0.4,0,0.2,1)] ${
-                    focusedField === "message" || formState.message
-                      ? "top-2 text-xs text-primary"
-                      : "top-4 text-sm"
-                  }`}
+                  className={`pointer-events-none absolute left-4 text-muted-foreground transition-all duration-300 ease-[cubic-bezier(0.4,0,0.2,1)] ${focusedField === "message" || formState.message
+                    ? "top-2 text-xs text-primary"
+                    : "top-4 text-sm"
+                    }`}
                 >
                   Message
                 </label>
@@ -183,9 +177,8 @@ export function ContactSection() {
 
           {/* Contact Info */}
           <div
-            className={`flex flex-col justify-center gap-6 transition-all duration-700 ease-[cubic-bezier(0.4,0,0.2,1)] ${
-              isVisible ? "translate-x-0 opacity-100" : "translate-x-8 opacity-0"
-            }`}
+            className={`flex flex-col justify-center gap-6 transition-all duration-700 ease-[cubic-bezier(0.4,0,0.2,1)] ${isVisible ? "translate-x-0 opacity-100" : "translate-x-8 opacity-0"
+              }`}
             style={{ transitionDelay: "400ms" }}
           >
             <div className="glass rounded-xl p-6">
@@ -196,16 +189,15 @@ export function ContactSection() {
 
               <div className="flex flex-col gap-4">
                 {[
-                  { icon: Mail, href: "mailto:mahi@example.com", text: "mahi@example.com" },
-                  { icon: Github, href: "https://github.com", text: "github.com/mahi" },
+                  { icon: Mail, href: "mailto:vadthyavathmahendar@gmail.com", text: "vadthyavathmahendar@gmial.com" },
+                  { icon: Github, href: "https://github.com/vadthyavathmahendar-code", text: "https://github.com/vadthyavathmahendar-code" },
                   { icon: Linkedin, href: "https://linkedin.com", text: "linkedin.com/in/mahi" },
                 ].map((item, index) => (
                   <MagneticButton
                     key={item.text}
                     href={item.href}
-                    className={`group flex items-center gap-3 text-muted-foreground transition-all duration-300 ease-[cubic-bezier(0.4,0,0.2,1)] hover:text-primary ${
-                      isVisible ? "translate-x-0 opacity-100" : "translate-x-4 opacity-0"
-                    }`}
+                    className={`group flex items-center gap-3 text-muted-foreground transition-all duration-300 ease-[cubic-bezier(0.4,0,0.2,1)] hover:text-primary ${isVisible ? "translate-x-0 opacity-100" : "translate-x-4 opacity-0"
+                      }`}
                     strength={0.15}
                   >
                     <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-primary/10 text-primary transition-all duration-300 group-hover:bg-primary/20 group-hover:scale-110">

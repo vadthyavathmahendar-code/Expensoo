@@ -22,9 +22,9 @@ export function Footer() {
 
         <div className="flex items-center gap-4">
           {[
-            { icon: Github, href: "https://github.com", label: "GitHub" },
+            { icon: Github, href: "https://github.com/vadthyavathmahendar-code", label: "GitHub" },
             { icon: Linkedin, href: "https://linkedin.com", label: "LinkedIn" },
-            { icon: Mail, href: "mailto:mahi@example.com", label: "Email" },
+            { icon: Mail, href: "mailto:vadthyavathmahendar@gmail.com", label: "Email" },
           ].map((item) => (
             <a
               key={item.label}
