@@ -18,7 +18,6 @@ const skillCategories = [
     skills: [
       { name: "React", icon: "⚛" },
       { name: "Node.js", icon: "N" },
-      { name: "Express", icon: "Ex" },
     ],
   },
   {
@@ -35,6 +34,8 @@ const skillCategories = [
     color: "from-amber-400 to-orange-400",
     skills: [
       { name: "MongoDB", icon: "M" },
+      { name: "Supabase", icon: "S" },
+      { name: "Firebase", icon: "🔥" },
     ],
   },
 ]
@@ -58,9 +59,8 @@ export function SkillsSection() {
     <section id="skills" className="relative px-6 py-24" ref={sectionRef}>
       <div className="mx-auto max-w-6xl">
         <div
-          className={`mb-16 text-center transition-all duration-700 ${
-            isVisible ? "translate-y-0 opacity-100" : "translate-y-8 opacity-0"
-          }`}
+          className={`mb-16 text-center transition-all duration-700 ${isVisible ? "translate-y-0 opacity-100" : "translate-y-8 opacity-0"
+            }`}
         >
           <h2 className="mb-4 text-3xl font-bold text-foreground md:text-4xl">
             My <span className="text-gradient">Skills</span>
@@ -75,9 +75,8 @@ export function SkillsSection() {
           {skillCategories.map((category, catIndex) => (
             <div
               key={category.title}
-              className={`glass group rounded-xl p-6 transition-all duration-500 hover:scale-105 hover:border-primary/30 ${
-                isVisible ? "translate-y-0 opacity-100" : "translate-y-12 opacity-0"
-              }`}
+              className={`glass group rounded-xl p-6 transition-all duration-500 hover:scale-105 hover:border-primary/30 ${isVisible ? "translate-y-0 opacity-100" : "translate-y-12 opacity-0"
+                }`}
               style={{ transitionDelay: `${catIndex * 150}ms` }}
             >
               <h3 className="mb-4 text-lg font-semibold text-foreground">
