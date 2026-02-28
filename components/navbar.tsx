@@ -14,37 +14,66 @@ const navLinks = [
 export function Navbar() {
   const [isScrolled, setIsScrolled] = useState(false)
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false)
+  const [activeSection, setActiveSection] = useState("")
 
   useEffect(() => {
-    const handleScroll = () => setIsScrolled(window.scrollY > 50)
-    window.addEventListener("scroll", handleScroll)
+    const handleScroll = () => {
+      setIsScrolled(window.scrollY > 50)
+
+      // Determine active section
+      const sections = navLinks.map((link) => link.href.replace("#", ""))
+      for (const section of sections.reverse()) {
+        const element = document.getElementById(section)
+        if (element) {
+          const rect = element.getBoundingClientRect()
+          if (rect.top <= 150) {
+            setActiveSection(section)
+            break
+          }
+        }
+      }
+    }
+
+    window.addEventListener("scroll", handleScroll, { passive: true })
     return () => window.removeEventListener("scroll", handleScroll)
   }, [])
 
   return (
     <header
-      className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 ${
+      className={`fixed top-0 left-0 right-0 z-50 transition-all duration-500 ease-[cubic-bezier(0.4,0,0.2,1)] ${
         isScrolled ? "glass py-3" : "bg-transparent py-5"
       }`}
     >
       <nav className="mx-auto flex max-w-6xl items-center justify-between px-6">
         <a
           href="#"
-          className="text-gradient text-xl font-bold tracking-tight"
+          className="group text-gradient text-xl font-bold tracking-tight transition-transform duration-300 hover:scale-105"
           aria-label="Go to top"
         >
-          {"<Mahi />"}
+          <span className="inline-block transition-transform duration-300 group-hover:-rotate-3">
+            {"<Mahi />"}
+          </span>
         </a>
 
         {/* Desktop Nav */}
-        <ul className="hidden items-center gap-8 md:flex">
+        <ul className="hidden items-center gap-1 md:flex">
           {navLinks.map((link) => (
             <li key={link.name}>
               <a
                 href={link.href}
-                className="text-sm text-muted-foreground transition-colors duration-200 hover:text-primary"
+                className={`relative px-4 py-2 text-sm transition-colors duration-300 ${
+                  activeSection === link.href.replace("#", "")
+                    ? "text-primary"
+                    : "text-muted-foreground hover:text-primary"
+                }`}
               >
                 {link.name}
+                {/* Active indicator */}
+                <span
+                  className={`absolute bottom-0 left-1/2 h-0.5 -translate-x-1/2 rounded-full bg-primary transition-all duration-300 ease-[cubic-bezier(0.4,0,0.2,1)] ${
+                    activeSection === link.href.replace("#", "") ? "w-4" : "w-0"
+                  }`}
+                />
               </a>
             </li>
           ))}
@@ -52,24 +81,46 @@ export function Navbar() {
 
         {/* Mobile Menu Toggle */}
         <button
-          className="text-foreground md:hidden"
+          className="relative z-50 text-foreground transition-transform duration-300 hover:scale-110 md:hidden"
           onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
           aria-label={isMobileMenuOpen ? "Close menu" : "Open menu"}
         >
-          {isMobileMenuOpen ? <X size={24} /> : <Menu size={24} />}
+          <div className="relative h-6 w-6">
+            <X
+              size={24}
+              className={`absolute inset-0 transition-all duration-300 ${
+                isMobileMenuOpen ? "rotate-0 opacity-100" : "rotate-90 opacity-0"
+              }`}
+            />
+            <Menu
+              size={24}
+              className={`absolute inset-0 transition-all duration-300 ${
+                isMobileMenuOpen ? "-rotate-90 opacity-0" : "rotate-0 opacity-100"
+              }`}
+            />
+          </div>
         </button>
       </nav>
 
       {/* Mobile Menu */}
-      {isMobileMenuOpen && (
-        <div className="glass mt-2 mx-4 rounded-lg p-4 md:hidden">
-          <ul className="flex flex-col gap-4">
-            {navLinks.map((link) => (
+      <div
+        className={`absolute left-4 right-4 top-full mt-2 overflow-hidden rounded-lg transition-all duration-500 ease-[cubic-bezier(0.4,0,0.2,1)] md:hidden ${
+          isMobileMenuOpen ? "max-h-96 opacity-100" : "max-h-0 opacity-0"
+        }`}
+      >
+        <div className="glass p-4">
+          <ul className="flex flex-col gap-1">
+            {navLinks.map((link, index) => (
               <li key={link.name}>
                 <a
                   href={link.href}
-                  className="block text-sm text-muted-foreground transition-colors duration-200 hover:text-primary"
+                  className={`block rounded-lg px-4 py-3 text-sm transition-all duration-300 ${
+                    activeSection === link.href.replace("#", "")
+                      ? "bg-primary/10 text-primary"
+                      : "text-muted-foreground hover:bg-secondary/50 hover:text-primary"
+                  }`}
                   onClick={() => setIsMobileMenuOpen(false)}
+                  style={{ transitionDelay: isMobileMenuOpen ? `${index * 50}ms` : "0ms" }}
                 >
                   {link.name}
                 </a>
@@ -77,7 +128,7 @@ export function Navbar() {
             ))}
           </ul>
         </div>
-      )}
+      </div>
     </header>
   )
 }

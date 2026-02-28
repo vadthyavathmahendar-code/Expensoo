@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react"
 import { ArrowDown, ExternalLink, Mail } from "lucide-react"
+import { MagneticButton } from "./magnetic-button"
 
 const roles = ["Full Stack Developer", "Java Developer", "AI Enthusiast"]
 
@@ -12,7 +13,8 @@ export function HeroSection() {
   const [isVisible, setIsVisible] = useState(false)
 
   useEffect(() => {
-    setIsVisible(true)
+    const timer = setTimeout(() => setIsVisible(true), 100)
+    return () => clearTimeout(timer)
   }, [])
 
   useEffect(() => {
@@ -47,16 +49,26 @@ export function HeroSection() {
       {/* Radial glow behind hero */}
       <div className="absolute inset-0 bg-gradient-radial" aria-hidden="true" />
 
-      <div
-        className={`relative z-10 mx-auto max-w-4xl text-center transition-all duration-1000 ${isVisible ? "translate-y-0 opacity-100" : "translate-y-8 opacity-0"
+      <div className="relative z-10 mx-auto max-w-4xl text-center">
+        {/* Status Badge */}
+        <div
+          className={`mb-6 inline-flex items-center gap-2 rounded-full border border-border bg-secondary/50 px-4 py-1.5 text-sm text-muted-foreground transition-all duration-1000 ease-[cubic-bezier(0.4,0,0.2,1)] ${
+            isVisible ? "translate-y-0 opacity-100" : "-translate-y-4 opacity-0"
           }`}
-      >
-        <div className="mb-6 inline-flex items-center gap-2 rounded-full border border-border bg-secondary/50 px-4 py-1.5 text-sm text-muted-foreground">
-          <span className="inline-block h-2 w-2 animate-pulse rounded-full bg-emerald-400" />
+        >
+          <span className="relative flex h-2 w-2">
+            <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-emerald-400 opacity-75" />
+            <span className="relative inline-flex h-2 w-2 rounded-full bg-emerald-400" />
+          </span>
           Available for opportunities
         </div>
 
-        <h1 className="mb-6 text-4xl font-bold leading-tight tracking-tight text-foreground md:text-6xl lg:text-7xl">
+        {/* Main Heading */}
+        <h1
+          className={`mb-6 text-4xl font-bold leading-tight tracking-tight text-foreground transition-all delay-100 duration-1000 ease-[cubic-bezier(0.4,0,0.2,1)] md:text-6xl lg:text-7xl ${
+            isVisible ? "translate-y-0 opacity-100" : "translate-y-8 opacity-0"
+          }`}
+        >
           {"Hi, I'm "}
           <span className="text-gradient">V Mahendar</span>
           <br />
@@ -65,45 +77,82 @@ export function HeroSection() {
           </span>
         </h1>
 
-        <p className="mx-auto mb-4 max-w-2xl text-lg leading-relaxed text-muted-foreground md:text-xl">
+        {/* Subtitle */}
+        <p
+          className={`mx-auto mb-4 max-w-2xl text-lg leading-relaxed text-muted-foreground transition-all delay-200 duration-1000 ease-[cubic-bezier(0.4,0,0.2,1)] md:text-xl ${
+            isVisible ? "translate-y-0 opacity-100" : "translate-y-8 opacity-0"
+          }`}
+        >
           Building scalable web applications and intelligent solutions.
         </p>
 
         {/* Typing effect */}
-        <div className="mb-10 flex items-center justify-center font-mono text-lg text-primary md:text-xl">
+        <div
+          className={`mb-10 flex items-center justify-center font-mono text-lg text-primary transition-all delay-300 duration-1000 ease-[cubic-bezier(0.4,0,0.2,1)] md:text-xl ${
+            isVisible ? "translate-y-0 opacity-100" : "translate-y-8 opacity-0"
+          }`}
+        >
           <span className="mr-2 text-muted-foreground">{">"}</span>
           <span>{displayText}</span>
-          <span className="ml-0.5 inline-block w-[2px] animate-pulse bg-primary" style={{ height: "1.2em" }} />
+          <span
+            className="ml-0.5 inline-block w-[2px] bg-primary"
+            style={{
+              height: "1.2em",
+              animation: "blink 1s step-end infinite",
+            }}
+          />
         </div>
 
-        <div className="flex flex-col items-center justify-center gap-4 sm:flex-row">
-          <a
+        {/* CTA Buttons */}
+        <div
+          className={`flex flex-col items-center justify-center gap-4 transition-all delay-400 duration-1000 ease-[cubic-bezier(0.4,0,0.2,1)] sm:flex-row ${
+            isVisible ? "translate-y-0 opacity-100" : "translate-y-8 opacity-0"
+          }`}
+        >
+          <MagneticButton
             href="#projects"
-            className="group inline-flex items-center gap-2 rounded-lg bg-primary px-6 py-3 font-medium text-primary-foreground transition-all duration-300 hover:scale-105 glow-blue"
+            className="group relative inline-flex items-center gap-2 overflow-hidden rounded-lg bg-primary px-6 py-3 font-medium text-primary-foreground transition-all duration-300 hover:shadow-[0_0_30px_rgba(56,189,248,0.4)]"
+            strength={0.2}
           >
-            <ExternalLink size={18} />
+            <ExternalLink size={18} className="transition-transform duration-300 group-hover:rotate-12" />
             View Projects
-          </a>
-          <a
+            <span className="absolute inset-0 -translate-x-full bg-gradient-to-r from-transparent via-white/20 to-transparent transition-transform duration-700 group-hover:translate-x-full" />
+          </MagneticButton>
+          <MagneticButton
             href="#contact"
-            className="glass group inline-flex items-center gap-2 rounded-lg px-6 py-3 font-medium text-foreground transition-all duration-300 hover:scale-105 hover:border-primary/30"
+            className="glass group relative inline-flex items-center gap-2 overflow-hidden rounded-lg px-6 py-3 font-medium text-foreground transition-all duration-300 hover:border-primary/30 hover:shadow-[0_0_20px_rgba(56,189,248,0.2)]"
+            strength={0.2}
           >
-            <Mail size={18} />
+            <Mail size={18} className="transition-transform duration-300 group-hover:scale-110" />
             Contact Me
-          </a>
+            <span className="absolute inset-0 -translate-x-full bg-gradient-to-r from-transparent via-primary/10 to-transparent transition-transform duration-700 group-hover:translate-x-full" />
+          </MagneticButton>
         </div>
 
         {/* Scroll indicator */}
-        <div className="mt-16 flex justify-center">
+        <div
+          className={`mt-16 flex justify-center transition-all delay-500 duration-1000 ease-[cubic-bezier(0.4,0,0.2,1)] ${
+            isVisible ? "translate-y-0 opacity-100" : "translate-y-8 opacity-0"
+          }`}
+        >
           <a
             href="#about"
-            className="animate-bounce text-muted-foreground transition-colors hover:text-primary"
+            className="group flex flex-col items-center gap-2 text-muted-foreground transition-colors hover:text-primary"
             aria-label="Scroll to about section"
           >
-            <ArrowDown size={24} />
+            <span className="text-xs font-medium uppercase tracking-widest">Scroll</span>
+            <ArrowDown size={20} className="animate-bounce" />
           </a>
         </div>
       </div>
+
+      {/* Blink animation for cursor */}
+      <style jsx>{`
+        @keyframes blink {
+          0%, 50% { opacity: 1; }
+          51%, 100% { opacity: 0; }
+        }
+      `}</style>
     </section>
   )
 }
