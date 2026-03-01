@@ -15,7 +15,8 @@ async function withRetry<T>(fn: () => Promise<T>, retries = 3, delay = 1000): Pr
   try {
     return await fn();
   } catch (error: any) {
-    if (retries > 0 && error?.message?.includes('429')) {
+    const isQuotaError = error?.message?.includes('429') || error?.message?.toLowerCase().includes('quota');
+    if (retries > 0 && error?.message?.includes('429') && !isQuotaError) {
       await sleep(delay);
       return withRetry(fn, retries - 1, delay * 2);
     }
@@ -195,8 +196,12 @@ export async function getBudgetForecast(transactions: any[], weeklyBudget: numbe
     }));
     
     return JSON.parse(response.text || "null");
-  } catch (error) {
+  } catch (error: any) {
     console.error("Budget Forecast AI failed:", error);
+    if (error?.message?.includes('quota') || error?.message?.includes('429')) {
+      // Return a special object to indicate quota exceeded if needed, or just null
+      return null;
+    }
     return null;
   }
 }

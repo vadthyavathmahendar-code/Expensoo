@@ -44,6 +44,7 @@ import {
   RefreshCw,
   Crown,
   Edit2,
+  Edit3,
   Phone,
   Camera,
   Check,
@@ -365,10 +366,12 @@ const Select = ({
 const TransactionItem = ({ 
   transaction, 
   onDelete, 
+  onEdit,
   deletingId 
 }: { 
   transaction: any; 
   onDelete?: (id: string) => void; 
+  onEdit?: (transaction: any) => void;
   deletingId?: string | null;
 }) => {
   const config = getCategoryConfig(transaction.category);
@@ -381,10 +384,12 @@ const TransactionItem = ({
     <motion.div 
       initial={{ opacity: 0, y: 10 }}
       animate={{ opacity: 1, y: 0 }}
+      onClick={() => onEdit?.(transaction)}
       className={cn(
         "flex items-center justify-between p-4 rounded-[24px] transition-all hover:scale-[1.01] group relative overflow-hidden border",
         isDark ? "bg-slate-900/50 border-white/5" : "bg-white border-slate-100 shadow-sm",
-        isDeleting && "opacity-50 pointer-events-none scale-[0.98]"
+        isDeleting && "opacity-50 pointer-events-none scale-[0.98]",
+        onEdit && "cursor-pointer active:scale-[0.98]"
       )}
     >
       <div className="flex items-center gap-4">
@@ -406,18 +411,34 @@ const TransactionItem = ({
           </p>
           {transaction.description && <p className="text-[10px] text-slate-400 uppercase tracking-widest text-right">{transaction.description}</p>}
         </div>
-        {onDelete && (
-          <button 
-            onClick={() => onDelete(transaction.id)}
-            className="p-1.5 text-rose-500/80 hover:text-rose-500 opacity-0 group-hover:opacity-100 transition-all translate-x-4 group-hover:translate-x-0"
-          >
-            {isDeleting ? (
-              <div className="w-3.5 h-3.5 border-2 border-rose-500 border-t-transparent rounded-full animate-spin" />
-            ) : (
-              <Trash2 size={14} strokeWidth={1.5} />
-            )}
-          </button>
-        )}
+        <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-all translate-x-4 group-hover:translate-x-0">
+          {onEdit && (
+            <button 
+              onClick={(e) => {
+                e.stopPropagation();
+                onEdit(transaction);
+              }}
+              className="p-1.5 text-indigo-500/80 hover:text-indigo-500"
+            >
+              <Edit3 size={14} strokeWidth={1.5} />
+            </button>
+          )}
+          {onDelete && (
+            <button 
+              onClick={(e) => {
+                e.stopPropagation();
+                onDelete(transaction.id);
+              }}
+              className="p-1.5 text-rose-500/80 hover:text-rose-500"
+            >
+              {isDeleting ? (
+                <div className="w-3.5 h-3.5 border-2 border-rose-500 border-t-transparent rounded-full animate-spin" />
+              ) : (
+                <Trash2 size={14} strokeWidth={1.5} />
+              )}
+            </button>
+          )}
+        </div>
       </div>
     </motion.div>
   );
@@ -721,7 +742,7 @@ const InsightChip = ({ insight }: { insight: string }) => {
   );
 };
 
-const Dashboard = ({ transactions, weeklyBudget, budgetInsight }: { transactions: any[], weeklyBudget: number, budgetInsight: string }) => {
+const Dashboard = ({ transactions, weeklyBudget, budgetInsight, onEdit }: { transactions: any[], weeklyBudget: number, budgetInsight: string, onEdit: (t: any) => void }) => {
   const income = transactions.filter(t => t.type === 'income').reduce((acc, t) => acc + t.amount, 0);
   const expenses = transactions.filter(t => t.type === 'expense').reduce((acc, t) => acc + t.amount, 0);
   const balance = income - expenses;
@@ -867,7 +888,7 @@ const Dashboard = ({ transactions, weeklyBudget, budgetInsight }: { transactions
         </div>
         <div className="space-y-3">
           {transactions.slice(0, 2).map((t) => (
-            <TransactionItem key={t.id} transaction={t} />
+            <TransactionItem key={t.id} transaction={t} onEdit={onEdit} />
           ))}
         </div>
       </div>
@@ -875,7 +896,7 @@ const Dashboard = ({ transactions, weeklyBudget, budgetInsight }: { transactions
   );
 };
 
-const HistoryPage = ({ transactions, onDelete, deletingId }: { transactions: any[], onDelete: (id: string) => void, deletingId: string | null }) => {
+const HistoryPage = ({ transactions, onDelete, onEdit, deletingId }: { transactions: any[], onDelete: (id: string) => void, onEdit: (t: any) => void, deletingId: string | null }) => {
   const [search, setSearch] = useState('');
   const [filter, setFilter] = useState('all');
   const { isDark } = useTheme();
@@ -944,6 +965,7 @@ const HistoryPage = ({ transactions, onDelete, deletingId }: { transactions: any
                   key={t.id} 
                   transaction={t} 
                   onDelete={onDelete} 
+                  onEdit={onEdit}
                   deletingId={deletingId} 
                 />
               ))}
@@ -977,10 +999,25 @@ const BudgetForecastSection = ({ transactions, weeklyBudget }: { transactions: a
   };
 
   useEffect(() => {
-    if (transactions.length > 0 && !forecast) {
-      fetchForecast();
-    }
-  }, [transactions.length > 0]);
+    // No automatic forecast generation to save quota
+  }, []);
+
+  if (!forecast && !loading) {
+    return (
+      <Card className="p-8 flex flex-col items-center justify-center space-y-4 border-dashed border-2 border-slate-200 dark:border-white/10">
+        <div className="w-12 h-12 bg-primary/10 rounded-2xl flex items-center justify-center text-primary">
+          <Sparkles size={24} strokeWidth={1.5} />
+        </div>
+        <div className="text-center">
+          <h3 className={cn("text-sm font-bold", isDark ? "text-white" : "text-slate-900")}>AI Budget Forecast</h3>
+          <p className="text-xs text-slate-500 mt-1">Generate a 7-day spending prediction based on your history.</p>
+        </div>
+        <Button variant="gradient" onClick={fetchForecast} className="mt-2">
+          Generate Forecast
+        </Button>
+      </Card>
+    );
+  }
 
   if (loading) {
     return (
@@ -2286,6 +2323,8 @@ export default function App() {
   const [activeTab, setActiveTab] = useState('dashboard');
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
   const [isAiOpen, setIsAiOpen] = useState(false);
+  const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+  const [editingTransactionId, setEditingTransactionId] = useState<string | null>(null);
   const [activeToast, setActiveToast] = useState<{ title: string, body: string } | null>(null);
   const [isLocked, setIsLocked] = useState(true);
   const { securityLockEnabled, aiPersonality, weeklyBudget, formatAmount, currency } = useSettings();
@@ -2294,6 +2333,7 @@ export default function App() {
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
   const [transactionToDelete, setTransactionToDelete] = useState<string | null>(null);
   const [budgetInsight, setBudgetInsight] = useState('');
+  const lastInsightCall = useRef<number>(0);
   const [hasUnreadNotifications, setHasUnreadNotifications] = useState(false);
 
   // Form state
@@ -2339,9 +2379,13 @@ export default function App() {
       const data = await firebaseService.getTransactions(user.id);
       setTransactions(data);
       
-      // Fetch budget insight
-      const insight = await getBudgetInsight(data, weeklyBudget, aiPersonality, currency);
-      setBudgetInsight(insight);
+      // Throttle AI budget insight (max once every 5 minutes)
+      const now = Date.now();
+      if (now - lastInsightCall.current > 5 * 60 * 1000) {
+        lastInsightCall.current = now;
+        const insight = await getBudgetInsight(data, weeklyBudget, aiPersonality, currency);
+        setBudgetInsight(insight);
+      }
     } catch (err) {
       console.error(err);
     }
@@ -2352,17 +2396,29 @@ export default function App() {
     if (!user) return;
     triggerHaptic([10, 50, 10]);
     try {
-      await firebaseService.addTransaction(user.id, {
-        amount: parseFloat(amount),
-        category,
-        type,
-        date,
-        description
-      });
-      
-      notificationService.sendLocalNotification('Transaction Added', `Successfully added ${category} ${type} of ${formatAmount(parseFloat(amount))}`);
+      if (editingTransactionId) {
+        await firebaseService.updateTransaction(editingTransactionId, {
+          amount: parseFloat(amount),
+          category,
+          type,
+          date,
+          description
+        });
+        notificationService.sendLocalNotification('Transaction Updated', `Successfully updated ${category} ${type}`);
+      } else {
+        await firebaseService.addTransaction(user.id, {
+          amount: parseFloat(amount),
+          category,
+          type,
+          date,
+          description
+        });
+        notificationService.sendLocalNotification('Transaction Added', `Successfully added ${category} ${type} of ${formatAmount(parseFloat(amount))}`);
+      }
       
       setIsAddModalOpen(false);
+      setIsEditModalOpen(false);
+      setEditingTransactionId(null);
       setAmount('');
       setDescription('');
       loadTransactions();
@@ -2370,6 +2426,17 @@ export default function App() {
     } catch (err) {
       console.error(err);
     }
+  };
+
+  const handleEdit = (transaction: any) => {
+    setEditingTransactionId(transaction.id);
+    setAmount(transaction.amount.toString());
+    setCategory(transaction.category);
+    setType(transaction.type);
+    setDate(transaction.date.split('T')[0]);
+    setDescription(transaction.description || '');
+    setIsAddModalOpen(true);
+    triggerHaptic(10);
   };
 
   const handleDelete = async (id: string) => {
@@ -2470,12 +2537,14 @@ export default function App() {
                 transactions={transactions} 
                 weeklyBudget={weeklyBudget}
                 budgetInsight={budgetInsight}
+                onEdit={handleEdit}
               />
             )}
             {activeTab === 'history' && (
               <HistoryPage 
                 transactions={transactions} 
                 onDelete={handleDelete} 
+                onEdit={handleEdit}
                 deletingId={deletingId}
               />
             )}
@@ -2504,7 +2573,15 @@ export default function App() {
           tab.special ? (
             <button
               key={tab.id}
-              onClick={() => setIsAddModalOpen(true)}
+              onClick={() => {
+                setEditingTransactionId(null);
+                setAmount('');
+                setCategory('Food');
+                setType('expense');
+                setDate(new Date().toISOString().split('T')[0]);
+                setDescription('');
+                setIsAddModalOpen(true);
+              }}
               className="w-16 h-16 -mt-12 bg-primary rounded-2xl flex items-center justify-center text-white shadow-xl shadow-primary/40 active:scale-90 transition-transform"
             >
               <Plus size={32} strokeWidth={1.5} />
@@ -2614,8 +2691,10 @@ export default function App() {
               <div className={cn("w-12 h-1.5 rounded-full mx-auto mt-4 mb-2 sm:hidden", isDark ? "bg-slate-800" : "bg-slate-200")} />
               <div className="p-8 sm:p-10">
                 <div className="flex justify-between items-center mb-8">
-                  <h2 className={cn("text-3xl font-bold tracking-tight", isDark ? "text-white" : "text-slate-900")}>New Entry</h2>
-                  <button onClick={() => setIsAddModalOpen(false)} className={cn("p-2 rounded-full transition-colors", isDark ? "bg-slate-900 text-white" : "bg-slate-100 text-slate-900")}>
+                  <h2 className={cn("text-3xl font-bold tracking-tight", isDark ? "text-white" : "text-slate-900")}>
+                    {editingTransactionId ? 'Edit Entry' : 'New Entry'}
+                  </h2>
+                  <button onClick={() => { setIsAddModalOpen(false); setEditingTransactionId(null); setAmount(''); setDescription(''); }} className={cn("p-2 rounded-full transition-colors", isDark ? "bg-slate-900 text-white" : "bg-slate-100 text-slate-900")}>
                     <X size={20} strokeWidth={1.2} />
                   </button>
                 </div>
