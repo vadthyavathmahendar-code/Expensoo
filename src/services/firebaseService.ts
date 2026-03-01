@@ -9,7 +9,6 @@ import {
   doc,
   setDoc,
   getDoc,
-  updateDoc,
   Timestamp
 } from 'firebase/firestore';
 import { 
@@ -41,19 +40,23 @@ export const firebaseService = {
   updateUserProfile: async (userId: string, data: { displayName?: string, photoURL?: string, phoneNumber?: string, bio?: string, avatar?: string }) => {
     const user = auth.currentUser;
     if (user) {
-      if (data.displayName !== undefined || data.photoURL !== undefined) {
-        await updateProfile(user, {
-          displayName: data.displayName,
-          photoURL: data.photoURL
-        });
+      try {
+        if (data.displayName !== undefined || data.photoURL !== undefined) {
+          await updateProfile(user, {
+            displayName: data.displayName,
+            photoURL: data.photoURL
+          });
+        }
+      } catch (authErr) {
+        console.error("Auth profile update failed, continuing with Firestore update:", authErr);
       }
     }
 
     const userRef = doc(db, 'users', userId);
-    await updateDoc(userRef, {
+    await setDoc(userRef, {
       ...data,
       updatedAt: Timestamp.now()
-    });
+    }, { merge: true });
   },
 
   getUserProfile: async (userId: string) => {
@@ -99,9 +102,9 @@ export const firebaseService = {
 
   updatePushToken: async (userId: string, token: string) => {
     const userRef = doc(db, 'users', userId);
-    await updateDoc(userRef, {
+    await setDoc(userRef, {
       pushToken: token,
       updatedAt: Timestamp.now()
-    });
+    }, { merge: true });
   }
 };

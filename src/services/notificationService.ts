@@ -3,10 +3,15 @@ import { triggerHaptic } from '../lib/utils';
 export class NotificationService {
   private static instance: NotificationService;
   private permission: NotificationPermission = 'default';
+  private fallbackEnabled: boolean = false;
 
   private constructor() {
-    if (typeof window !== 'undefined' && 'Notification' in window) {
-      this.permission = Notification.permission;
+    if (typeof window !== 'undefined') {
+      if ('Notification' in window) {
+        this.permission = Notification.permission;
+      }
+      const savedFallback = localStorage.getItem('expenso_notifications_fallback');
+      this.fallbackEnabled = savedFallback === 'true';
     }
   }
 
@@ -42,20 +47,40 @@ export class NotificationService {
     return this.permission;
   }
 
+  public isFallbackEnabled(): boolean {
+    return this.fallbackEnabled;
+  }
+
+  public setFallbackEnabled(enabled: boolean) {
+    this.fallbackEnabled = enabled;
+    localStorage.setItem('expenso_notifications_fallback', enabled.toString());
+  }
+
   public sendLocalNotification(title: string, body: string) {
     if (this.permission === 'granted') {
-      const notification = new Notification(title, {
-        body,
-        icon: '/favicon.ico', // Fallback to favicon
-        badge: '/favicon.ico',
-      });
+      try {
+        const notification = new Notification(title, {
+          body,
+          icon: '/favicon.ico',
+          badge: '/favicon.ico',
+        });
 
-      notification.onclick = () => {
-        window.focus();
-        notification.close();
-      };
-    } else {
-      console.log('Notification permission not granted. In-app alert:', { title, body });
+        notification.onclick = () => {
+          window.focus();
+          notification.close();
+        };
+        return;
+      } catch (e) {
+        console.warn('Native notification failed, falling back to in-app alert', e);
+      }
+    }
+
+    if (this.fallbackEnabled || this.permission === 'granted') {
+      // Show in-app alert as fallback
+      console.log('Showing in-app notification:', { title, body });
+      // We'll use a custom event to trigger a toast in the UI
+      const event = new CustomEvent('expenso-notification', { detail: { title, body } });
+      window.dispatchEvent(event);
     }
   }
 

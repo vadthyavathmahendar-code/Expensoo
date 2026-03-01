@@ -23,16 +23,25 @@ async function withRetry<T>(fn: () => Promise<T>, retries = 3, delay = 1000): Pr
   }
 }
 
-export async function getFinancialAdvice(transactions: any[], userMessage: string, weeklyBudget: number = 500) {
+export async function getFinancialAdvice(transactions: any[], userMessage: string, weeklyBudget: number = 500, personality: string = 'Professional', currency: string = 'USD') {
   const model = "gemini-3.1-pro-preview";
+  const symbol = currency === 'INR' ? '₹' : '$';
   
+  const personalityPrompts = {
+    'Professional': 'You are a professional, polite, and data-driven financial assistant.',
+    'Strict Coach': 'You are a strict, no-nonsense financial coach. Be firm about overspending and push the user to save more. Use strong, direct language.',
+    'Sarcastic Friend': 'You are a witty, slightly sarcastic friend who knows the user spends too much on coffee. Be funny but helpful. Use emojis and informal language.'
+  };
+
   const context = `
-    You are a professional financial assistant for an app called Expenso.
-    The user has a weekly budget of $${weeklyBudget}.
+    ${personalityPrompts[personality as keyof typeof personalityPrompts] || personalityPrompts['Professional']}
+    You are an assistant for an app called Expenso.
+    The user has a weekly budget of ${symbol}${weeklyBudget}.
     The user has the following transaction history:
     ${JSON.stringify(transactions, null, 2)}
     
     Current date: ${new Date().toISOString()}
+    Currency: ${currency}
     
     Provide concise, actionable financial advice or answer the user's specific question based on this data.
     Pay special attention to "Spending Velocity" (how fast they are spending vs time left in the week).
@@ -53,15 +62,25 @@ export async function getFinancialAdvice(transactions: any[], userMessage: strin
       },
     }));
     return response.text;
-  } catch (error) {
+  } catch (error: any) {
     console.error("AI Service Error:", error);
+    if (error?.message?.includes('quota') || error?.message?.includes('429')) {
+      return "I've hit my daily limit for financial analysis. Please try again tomorrow!";
+    }
     return "I'm sorry, I'm having trouble analyzing your finances right now. Please try again later.";
   }
 }
 
-export async function getBudgetInsight(transactions: any[], weeklyBudget: number = 500) {
+export async function getBudgetInsight(transactions: any[], weeklyBudget: number = 500, personality: string = 'Professional', currency: string = 'USD') {
   const model = "gemini-3.1-pro-preview";
+  const symbol = currency === 'INR' ? '₹' : '$';
   
+  const personalityPrompts = {
+    'Professional': 'Provide a professional, data-driven warning.',
+    'Strict Coach': 'Provide a stern, disciplinary warning about overspending.',
+    'Sarcastic Friend': 'Provide a witty, slightly mocking but helpful warning about their spending habits.'
+  };
+
   // Local Fallback Calculation
   const calculateLocalInsight = () => {
     const startOfWeek = new Date();
@@ -84,10 +103,12 @@ export async function getBudgetInsight(transactions: any[], weeklyBudget: number
 
   const systemInstruction = `
     You are a financial analyst for Expenso. 
+    ${personalityPrompts[personality as keyof typeof personalityPrompts] || personalityPrompts['Professional']}
     Analyze the user's spending velocity for the current week.
-    Weekly Budget: $${weeklyBudget}
+    Weekly Budget: ${symbol}${weeklyBudget}
     Transactions: ${JSON.stringify(transactions)}
     Current Date: ${new Date().toISOString()}
+    Currency: ${currency}
 
     If the user is spending too fast (Spending Velocity > 1.0, where 1.0 is perfectly on track), provide a ONE-SENTENCE warning insight.
     Example: "Hey! You've used 70% of your food budget in 3 days. Consider slowing down."
@@ -105,24 +126,30 @@ export async function getBudgetInsight(transactions: any[], weeklyBudget: number
           thinkingLevel: ThinkingLevel.HIGH
         }
       },
-    }), 2, 500); // Fewer retries for background insights
+    }), 1, 500); // Fewer retries for background insights
     return response.text?.trim() || "";
-  } catch (error) {
-    console.warn("Budget Insight AI failed, using local fallback:", error);
+  } catch (error: any) {
+    if (error?.message?.includes('quota') || error?.message?.includes('429')) {
+      console.warn("Budget Insight AI quota exceeded, using local fallback.");
+    } else {
+      console.warn("Budget Insight AI failed, using local fallback:", error);
+    }
     return calculateLocalInsight();
   }
 }
 
-export async function getBudgetForecast(transactions: any[], weeklyBudget: number = 500): Promise<BudgetForecast | null> {
+export async function getBudgetForecast(transactions: any[], weeklyBudget: number = 500, currency: string = 'USD'): Promise<BudgetForecast | null> {
   const model = "gemini-3.1-pro-preview";
+  const symbol = currency === 'INR' ? '₹' : '$';
   
   const systemInstruction = `
     You are a financial forecasting expert for Expenso.
     Analyze the user's transaction history and predict their spending for the NEXT 7 DAYS.
     
-    Weekly Budget: $${weeklyBudget}
+    Weekly Budget: ${symbol}${weeklyBudget}
     Transactions: ${JSON.stringify(transactions)}
     Current Date: ${new Date().toISOString()}
+    Currency: ${currency}
 
     Provide:
     1. Predicted total spending for the next 7 days.

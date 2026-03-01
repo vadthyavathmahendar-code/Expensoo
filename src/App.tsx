@@ -54,7 +54,9 @@ import {
   Star,
   Heart,
   Sparkles,
-  BarChart3
+  BarChart3,
+  Download,
+  ShieldAlert
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { 
@@ -101,29 +103,144 @@ const Card = ({ children, className }: { children: React.ReactNode; className?: 
   );
 };
 
+const PrivacyMask = ({ children, className }: { children: React.ReactNode, className?: string }) => {
+  const { privacyMode } = useSettings();
+  return (
+    <div className={cn("relative", className)}>
+      <div className={cn(
+        "transition-all duration-300",
+        privacyMode ? "blur-[12px] select-none pointer-events-none" : "blur-0"
+      )}>
+        {children}
+      </div>
+      {privacyMode && (
+        <div className="absolute inset-0 flex items-center justify-center">
+          <div className="w-2 h-2 bg-slate-400/20 rounded-full mx-0.5" />
+          <div className="w-2 h-2 bg-slate-400/20 rounded-full mx-0.5" />
+          <div className="w-2 h-2 bg-slate-400/20 rounded-full mx-0.5" />
+        </div>
+      )}
+    </div>
+  );
+};
+
+const PinCodeOverlay = ({ onUnlock }: { onUnlock: () => void }) => {
+  const { pinCode, isDark } = useSettings() as any; // Cast as any to avoid TS errors for now
+  const { colors } = useTheme();
+  const [input, setInput] = useState('');
+  const [error, setError] = useState(false);
+
+  const handleKeypad = (num: string) => {
+    triggerHaptic(5);
+    if (input.length < 4) {
+      const nextInput = input + num;
+      setInput(nextInput);
+      if (nextInput.length === 4) {
+        if (nextInput === pinCode) {
+          triggerHaptic([10, 50, 10]);
+          onUnlock();
+        } else {
+          triggerHaptic([50, 50, 50]);
+          setError(true);
+          setTimeout(() => {
+            setInput('');
+            setError(false);
+          }, 500);
+        }
+      }
+    }
+  };
+
+  return (
+    <motion.div 
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      className="fixed inset-0 z-[200] flex flex-col items-center justify-center p-8"
+      style={{ backgroundColor: colors.bg }}
+    >
+      <div className="mb-12 text-center">
+        <div className="w-20 h-20 bg-primary/10 rounded-[32px] flex items-center justify-center text-primary mx-auto mb-6">
+          <Lock size={40} strokeWidth={1.5} />
+        </div>
+        <h2 className="text-2xl font-bold text-white tracking-tight mb-2">Security Lock</h2>
+        <p className="text-slate-500 text-sm">Enter your 4-digit PIN to continue</p>
+      </div>
+
+      <div className="flex gap-4 mb-16">
+        {[...Array(4)].map((_, i) => (
+          <motion.div
+            key={i}
+            animate={error ? { x: [0, -10, 10, -10, 10, 0] } : {}}
+            className={cn(
+              "w-4 h-4 rounded-full border-2 transition-all duration-300",
+              input.length > i 
+                ? "bg-primary border-primary scale-125" 
+                : "bg-transparent border-slate-700"
+            )}
+          />
+        ))}
+      </div>
+
+      <div className="grid grid-cols-3 gap-6 max-w-xs w-full">
+        {['1', '2', '3', '4', '5', '6', '7', '8', '9', '', '0', 'del'].map((key, i) => (
+          key === '' ? <div key={i} /> : (
+            <motion.button
+              key={i}
+              whileTap={{ scale: 0.9 }}
+              onClick={() => {
+                if (key === 'del') {
+                  setInput(prev => prev.slice(0, -1));
+                } else {
+                  handleKeypad(key);
+                }
+              }}
+              className={cn(
+                "w-16 h-16 rounded-full flex items-center justify-center text-xl font-bold transition-colors",
+                key === 'del' ? "text-slate-500" : "bg-white/5 text-white hover:bg-white/10"
+              )}
+            >
+              {key === 'del' ? <X size={20} /> : key}
+            </motion.button>
+          )
+        ))}
+      </div>
+    </motion.div>
+  );
+};
+
 const StickyHeader = ({ title, hasUnreadNotifications }: { title?: string, hasUnreadNotifications?: boolean }) => {
   const { isDark } = useTheme();
+  const { privacyMode, setPrivacyMode } = useSettings();
   return (
     <div className={cn(
       "sticky top-0 z-50 w-full glass backdrop-blur-xl border-b px-6 py-4 flex items-center justify-between transition-colors",
       isDark ? "bg-[#050505]/80 border-white/5" : "bg-white/80 border-slate-100"
     )}>
       <div className="flex items-center gap-2">
-        <div className="w-8 h-8 bg-gradient-to-br from-indigo-500 to-purple-600 rounded-lg flex items-center justify-center">
+        <div className="w-8 h-8 bg-gradient-to-br from-primary to-purple-600 rounded-lg flex items-center justify-center">
           <Wallet size={18} className="text-white" />
         </div>
-        <h1 className="text-xl font-bold tracking-tighter bg-gradient-to-br from-indigo-400 to-purple-500 bg-clip-text text-transparent">
+        <h1 className="text-xl font-bold tracking-tighter bg-gradient-to-br from-primary to-purple-500 bg-clip-text text-transparent">
           Expenso
         </h1>
       </div>
-      <div className="flex items-center gap-4">
+      <div className="flex items-center gap-2">
+        <button 
+          onClick={() => { triggerHaptic(5); setPrivacyMode(!privacyMode); }}
+          className={cn(
+            "p-2 rounded-full transition-colors",
+            isDark ? "bg-white/5 text-slate-400 hover:text-white" : "bg-slate-100 text-slate-500 hover:text-slate-900"
+          )}
+        >
+          {privacyMode ? <EyeOff size={20} strokeWidth={1.5} /> : <Eye size={20} strokeWidth={1.5} />}
+        </button>
         <button className={cn(
           "p-2 rounded-full transition-colors relative",
           isDark ? "bg-white/5 text-slate-400 hover:text-white" : "bg-slate-100 text-slate-500 hover:text-slate-900"
         )}>
           <Bell size={20} strokeWidth={1.5} />
           {hasUnreadNotifications && (
-            <span className="absolute top-2 right-2.5 w-2 h-2 bg-indigo-500 rounded-full border-2 border-white dark:border-[#050505]" />
+            <span className="absolute top-2 right-2.5 w-2 h-2 bg-primary rounded-full border-2 border-white dark:border-[#050505]" />
           )}
         </button>
       </div>
@@ -162,7 +279,7 @@ const Button = ({
   disabled?: boolean;
 }) => {
   const variants = {
-    primary: "bg-indigo-600 hover:bg-indigo-700 text-white shadow-lg shadow-indigo-500/20",
+    primary: "bg-primary hover:bg-primary/80 text-white shadow-lg shadow-primary/20",
     gradient: "bg-gradient-to-r from-indigo-500 to-purple-600 hover:shadow-indigo-500/40 text-white shadow-lg shadow-indigo-500/30",
     secondary: "bg-slate-100 hover:bg-slate-200 dark:bg-slate-900 dark:hover:bg-slate-800 text-slate-900 dark:text-slate-100",
     danger: "bg-rose-500 hover:bg-rose-600 text-white shadow-lg shadow-rose-500/20",
@@ -283,7 +400,7 @@ const TransactionItem = ({
         <div className="text-right">
           <p className={cn(
             "font-bold text-sm tracking-tight",
-            isIncome ? "text-indigo-500" : "dark:text-white text-slate-900"
+            isIncome ? "text-indigo-500" : "text-rose-500"
           )}>
             {isIncome ? '+' : ''}{formatAmount(transaction.amount)}
           </p>
@@ -417,7 +534,7 @@ const AuthPage = () => {
       style={{ backgroundColor: colors.bg }}
     >
       {/* Ambient Glow Orbs */}
-      <div className="absolute top-[-10%] left-[-10%] w-[50%] h-[50%] bg-indigo-600/20 blur-[120px] rounded-full" />
+      <div className="absolute top-[-10%] left-[-10%] w-[50%] h-[50%] bg-primary/20 blur-[120px] rounded-full" />
       <div className="absolute bottom-[-10%] right-[-10%] w-[50%] h-[50%] bg-purple-600/20 blur-[120px] rounded-full" />
 
       <motion.div 
@@ -551,9 +668,11 @@ const BudgetProgressBar = ({ current, total }: { current: number, total: number 
       <div className="flex justify-between items-end mb-4">
         <div>
           <p className="text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-1">Weekly Budget</p>
-          <h3 className="text-xl font-bold dark:text-white text-slate-900 tracking-tight">
-            {formatAmount(current)} <span className="text-slate-500 text-sm font-medium">/ {formatAmount(total)}</span>
-          </h3>
+          <PrivacyMask>
+            <h3 className="text-xl font-bold dark:text-white text-slate-900 tracking-tight">
+              {formatAmount(current)} <span className="text-slate-500 text-sm font-medium">/ {formatAmount(total)}</span>
+            </h3>
+          </PrivacyMask>
         </div>
         <div className={cn(
           "px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider",
@@ -590,12 +709,12 @@ const InsightChip = ({ insight }: { insight: string }) => {
     <motion.div 
       initial={{ opacity: 0, y: -20 }}
       animate={{ opacity: 1, y: 0 }}
-      className="bg-indigo-600/10 border border-indigo-500/20 p-4 rounded-2xl flex items-start gap-3 mb-6"
+      className="bg-primary/10 border border-primary/20 p-4 rounded-2xl flex items-start gap-3 mb-6"
     >
-      <div className="w-8 h-8 bg-indigo-600 rounded-xl flex items-center justify-center text-white shrink-0">
+      <div className="w-8 h-8 bg-primary rounded-xl flex items-center justify-center text-white shrink-0">
         <Zap size={16} fill="currentColor" />
       </div>
-      <p className="text-xs font-medium text-indigo-600 dark:text-indigo-400 leading-relaxed">
+      <p className="text-xs font-medium text-primary leading-relaxed">
         {insight}
       </p>
     </motion.div>
@@ -642,12 +761,14 @@ const Dashboard = ({ transactions, weeklyBudget, budgetInsight }: { transactions
 
       <div className="flex flex-col items-center justify-center py-4 space-y-1">
         <p className="text-slate-500 text-xs font-bold uppercase tracking-[0.2em]">Available Balance</p>
-        <h2 className={cn(
-          "text-5xl font-bold tracking-tighter text-indigo-500",
-          isDark ? "dark:text-white" : "text-indigo-600"
-        )}>
-          {formatAmount(balance)}
-        </h2>
+        <PrivacyMask>
+          <h2 className={cn(
+            "text-5xl font-bold tracking-tighter text-primary",
+            isDark ? "dark:text-white" : "text-primary"
+          )}>
+            {formatAmount(balance)}
+          </h2>
+        </PrivacyMask>
       </div>
 
       <BudgetProgressBar current={weeklyExpenses} total={weeklyBudget} />
@@ -663,7 +784,9 @@ const Dashboard = ({ transactions, weeklyBudget, budgetInsight }: { transactions
             </div>
             <p className="text-emerald-500/80 text-[10px] font-bold uppercase tracking-widest">Income</p>
           </div>
-          <h2 className="text-2xl font-bold text-emerald-500 tracking-tight">+{formatAmount(income)}</h2>
+          <PrivacyMask>
+            <h2 className="text-2xl font-bold text-emerald-500 tracking-tight">+{formatAmount(income)}</h2>
+          </PrivacyMask>
         </Card>
 
         <Card className={cn(
@@ -676,7 +799,9 @@ const Dashboard = ({ transactions, weeklyBudget, budgetInsight }: { transactions
             </div>
             <p className="text-rose-500/80 text-[10px] font-bold uppercase tracking-widest">Expenses</p>
           </div>
-          <h2 className="text-2xl font-bold text-rose-500 tracking-tight">-{formatAmount(expenses)}</h2>
+          <PrivacyMask>
+            <h2 className="text-2xl font-bold text-rose-500 tracking-tight">-{formatAmount(expenses)}</h2>
+          </PrivacyMask>
         </Card>
       </div>
 
@@ -841,21 +966,21 @@ const HistoryPage = ({ transactions, onDelete, deletingId }: { transactions: any
 const BudgetForecastSection = ({ transactions, weeklyBudget }: { transactions: any[], weeklyBudget: number }) => {
   const [forecast, setForecast] = useState<BudgetForecast | null>(null);
   const [loading, setLoading] = useState(false);
-  const { formatAmount } = useSettings();
+  const { formatAmount, currency } = useSettings();
   const { isDark } = useTheme();
 
   const fetchForecast = async () => {
     setLoading(true);
-    const data = await getBudgetForecast(transactions, weeklyBudget);
+    const data = await getBudgetForecast(transactions, weeklyBudget, currency);
     setForecast(data);
     setLoading(false);
   };
 
   useEffect(() => {
-    if (transactions.length > 0) {
+    if (transactions.length > 0 && !forecast) {
       fetchForecast();
     }
-  }, [transactions, weeklyBudget]);
+  }, [transactions.length > 0]);
 
   if (loading) {
     return (
@@ -870,15 +995,25 @@ const BudgetForecastSection = ({ transactions, weeklyBudget }: { transactions: a
 
   return (
     <Card className="overflow-hidden border-indigo-500/20">
-      <div className="bg-gradient-to-r from-indigo-600 to-purple-600 p-6 flex items-center justify-between">
-        <div className="flex items-center gap-3">
-          <div className="w-10 h-10 bg-white/20 rounded-2xl flex items-center justify-center backdrop-blur-md">
-            <Sparkles size={20} className="text-white" />
+      <div className="bg-gradient-to-r from-primary to-purple-600 p-6 flex items-center justify-between">
+        <div className="flex items-center gap-4">
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 bg-white/20 rounded-2xl flex items-center justify-center backdrop-blur-md">
+              <Sparkles size={20} className="text-white" />
+            </div>
+            <div>
+              <h3 className="text-lg font-bold text-white">AI Budget Forecast</h3>
+              <p className="text-white/60 text-[10px] font-bold uppercase tracking-widest">Next 7 Days Prediction</p>
+            </div>
           </div>
-          <div>
-            <h3 className="text-lg font-bold text-white">AI Budget Forecast</h3>
-            <p className="text-white/60 text-[10px] font-bold uppercase tracking-widest">Next 7 Days Prediction</p>
-          </div>
+          <button 
+            onClick={fetchForecast}
+            disabled={loading}
+            className="p-2 bg-white/10 hover:bg-white/20 rounded-xl text-white transition-all disabled:opacity-50"
+            title="Refresh Forecast"
+          >
+            <RefreshCw size={16} className={cn(loading && "animate-spin")} />
+          </button>
         </div>
         <div className="text-right">
           <p className="text-white/60 text-[10px] font-bold uppercase tracking-widest mb-1">Confidence</p>
@@ -959,6 +1094,55 @@ const BudgetForecastSection = ({ transactions, weeklyBudget }: { transactions: a
   );
 };
 
+const RecurringTracker = ({ transactions }: { transactions: any[] }) => {
+  const { formatAmount } = useSettings();
+  const { isDark } = useTheme();
+  
+  // Detect recurring transactions (same amount and category within 35 days)
+  const expenses = transactions.filter(t => t.type === 'expense');
+  const recurring = expenses.reduce((acc: any[], t, i) => {
+    const match = expenses.slice(i + 1).find(m => 
+      m.category === t.category && 
+      Math.abs(m.amount - t.amount) < 1 &&
+      m.description === t.description
+    );
+    if (match && !acc.find(r => r.description === t.description)) {
+      acc.push(t);
+    }
+    return acc;
+  }, []);
+
+  if (recurring.length === 0) return null;
+
+  return (
+    <div className="space-y-4">
+      <div className="flex items-center justify-between px-2">
+        <h3 className="text-[10px] font-bold uppercase tracking-[0.3em] text-slate-500">Active Subscriptions</h3>
+        <span className="text-[10px] font-bold text-indigo-500 uppercase tracking-widest">{recurring.length} Detected</span>
+      </div>
+      <div className="grid grid-cols-1 gap-3">
+        {recurring.map((sub, i) => (
+          <Card key={i} className={cn("p-4 flex items-center justify-between", isDark ? "bg-white/5 border-white/10" : "bg-white border-slate-100 shadow-sm")}>
+            <div className="flex items-center gap-4">
+              <div className="w-10 h-10 bg-primary/10 rounded-xl flex items-center justify-center text-primary">
+                <RefreshCw size={20} strokeWidth={1.5} />
+              </div>
+              <div>
+                <p className={cn("text-sm font-bold", isDark ? "text-white" : "text-slate-900")}>{sub.description}</p>
+                <p className="text-[10px] text-slate-500 font-medium uppercase tracking-widest">{sub.category}</p>
+              </div>
+            </div>
+            <div className="text-right">
+              <p className={cn("text-sm font-bold", isDark ? "text-white" : "text-slate-900")}>{formatAmount(sub.amount)}</p>
+              <p className="text-[10px] text-emerald-500 font-bold uppercase tracking-widest">Monthly</p>
+            </div>
+          </Card>
+        ))}
+      </div>
+    </div>
+  );
+};
+
 const ReportsPage = ({ transactions, weeklyBudget }: { transactions: any[], weeklyBudget: number }) => {
   const { formatAmount } = useSettings();
   const { isDark } = useTheme();
@@ -991,6 +1175,7 @@ const ReportsPage = ({ transactions, weeklyBudget }: { transactions: any[], week
       
       <div className="grid grid-cols-1 gap-8">
         <BudgetForecastSection transactions={transactions} weeklyBudget={weeklyBudget} />
+        <RecurringTracker transactions={transactions} />
 
         <Card className="h-[400px] rounded-[24px]">
           <h3 className="text-sm font-bold uppercase tracking-widest text-slate-400 mb-6">Monthly Performance</h3>
@@ -1050,7 +1235,7 @@ const ReportsPage = ({ transactions, weeklyBudget }: { transactions: any[], week
                   <motion.div 
                     initial={{ width: 0 }}
                     animate={{ width: `${Math.max(0, Math.min(100, (transactions.length > 0 ? ((transactions.filter(t => t.type === 'income').reduce((a, b) => a + b.amount, 0) - transactions.filter(t => t.type === 'expense').reduce((a, b) => a + b.amount, 0)) / (transactions.filter(t => t.type === 'income').reduce((a, b) => a + b.amount, 0) || 1)) * 100 : 0)))}%` }}
-                    className="bg-indigo-600 h-full rounded-full" 
+                    className="bg-primary h-full rounded-full" 
                   />
                 </div>
               </div>
@@ -1199,6 +1384,7 @@ const AiAssistant = ({ transactions, isOpen, onClose, weeklyBudget }: { transact
   const scrollRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
   const { isDark } = useTheme();
+  const { aiPersonality, currency } = useSettings();
 
   const scrollToBottom = () => {
     if (scrollRef.current) {
@@ -1221,13 +1407,15 @@ const AiAssistant = ({ transactions, isOpen, onClose, weeklyBudget }: { transact
 
   const handleSend = async () => {
     if (!input.trim()) return;
+    triggerHaptic(5);
     const userMsg = input;
     setInput('');
     setMessages(prev => [...prev, { role: 'user', content: userMsg }]);
     setIsTyping(true);
-    const advice = await getFinancialAdvice(transactions, userMsg, weeklyBudget);
+    const advice = await getFinancialAdvice(transactions, userMsg, weeklyBudget, aiPersonality, currency);
     setMessages(prev => [...prev, { role: 'ai', content: advice || "I'm sorry, I couldn't process that." }]);
     setIsTyping(false);
+    triggerHaptic([10, 30, 10]);
   };
 
   return (
@@ -1254,7 +1442,7 @@ const AiAssistant = ({ transactions, isOpen, onClose, weeklyBudget }: { transact
             <div className="w-12 h-1.5 bg-slate-800 rounded-full mx-auto mt-4 mb-2" />
             <div className={cn("px-6 py-4 flex justify-between items-center border-b", isDark ? "border-white/5" : "border-slate-100")}>
               <div className="flex items-center gap-2">
-                <div className="w-8 h-8 bg-indigo-600 rounded-lg flex items-center justify-center">
+                <div className="w-8 h-8 bg-primary rounded-lg flex items-center justify-center">
                   <MessageSquare size={18} className="text-white" />
                 </div>
                 <h2 className={cn("text-lg font-bold tracking-tight", isDark ? "text-white" : "text-slate-900")}>AI Assistant</h2>
@@ -1270,7 +1458,7 @@ const AiAssistant = ({ transactions, isOpen, onClose, weeklyBudget }: { transact
                   <div className={cn(
                     "max-w-[85%] p-5 rounded-[28px] relative group",
                     msg.role === 'user' 
-                      ? "bg-indigo-600 text-white rounded-tr-none" 
+                      ? "bg-primary text-white rounded-tr-none" 
                       : (isDark ? "bg-white/5 text-slate-200 rounded-tl-none border border-white/5" : "bg-slate-100 text-slate-800 rounded-tl-none border border-slate-200")
                   )}>
                     {msg.role === 'ai' && (
@@ -1298,7 +1486,7 @@ const AiAssistant = ({ transactions, isOpen, onClose, weeklyBudget }: { transact
                       transition={{ duration: 2, repeat: Infinity }}
                       className="absolute inset-0 bg-indigo-500 rounded-full blur-xl" 
                     />
-                    <div className="relative w-10 h-10 bg-indigo-600 rounded-full flex items-center justify-center text-white shadow-lg shadow-indigo-500/40">
+                    <div className="relative w-10 h-10 bg-primary rounded-full flex items-center justify-center text-white shadow-lg shadow-primary/40">
                       <MessageSquare size={18} strokeWidth={1.2} className="animate-bounce" />
                     </div>
                   </div>
@@ -1325,7 +1513,7 @@ const AiAssistant = ({ transactions, isOpen, onClose, weeklyBudget }: { transact
                 <button 
                   type="submit" 
                   disabled={isTyping}
-                  className="w-14 h-14 bg-indigo-600 rounded-2xl flex items-center justify-center text-white shadow-lg shadow-indigo-500/40 active:scale-90 transition-transform disabled:opacity-50"
+                  className="w-14 h-14 bg-primary rounded-2xl flex items-center justify-center text-white shadow-lg shadow-primary/40 active:scale-90 transition-transform disabled:opacity-50"
                 >
                   <Send size={22} strokeWidth={1.2} />
                 </button>
@@ -1340,15 +1528,34 @@ const AiAssistant = ({ transactions, isOpen, onClose, weeklyBudget }: { transact
 
 const ProfilePage = ({ transactions }: { transactions: any[] }) => {
   const { user, logout } = useAuth();
-  const { theme, toggleTheme, isDark } = useTheme();
-  const { currency, setCurrency, weeklyBudget, setWeeklyBudget } = useSettings();
+  const { theme, toggleTheme, isDark, colors } = useTheme();
+  const { 
+    currency, 
+    setCurrency, 
+    weeklyBudget, 
+    setWeeklyBudget, 
+    formatAmount,
+    securityLockEnabled,
+    setSecurityLockEnabled,
+    pinCode,
+    setPinCode,
+    accentColor,
+    setAccentColor,
+    aiPersonality,
+    setAiPersonality
+  } = useSettings();
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [isAvatarModalOpen, setIsAvatarModalOpen] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
+  const [isSavingProfile, setIsSavingProfile] = useState(false);
   const [isBudgetModalOpen, setIsBudgetModalOpen] = useState(false);
+  const [isPinModalOpen, setIsPinModalOpen] = useState(false);
   const [isLogoutModalOpen, setIsLogoutModalOpen] = useState(false);
   const [tempBudget, setTempBudget] = useState(weeklyBudget.toString());
-  const [notificationsEnabled, setNotificationsEnabled] = useState(notificationService.getPermissionStatus() === 'granted');
+  const [tempPin, setTempPin] = useState(pinCode);
+  const [notificationsEnabled, setNotificationsEnabled] = useState(
+    notificationService.getPermissionStatus() === 'granted' || notificationService.isFallbackEnabled()
+  );
   const [profile, setProfile] = useState({
     displayName: '',
     phoneNumber: '',
@@ -1365,18 +1572,27 @@ const ProfilePage = ({ transactions }: { transactions: any[] }) => {
 
   const handleToggleNotifications = async () => {
     if (!notificationsEnabled) {
-      const granted = await notificationService.requestPermission();
-      if (granted) {
-        setNotificationsEnabled(true);
-        if (user) {
-          // In a real web app, we'd get a real push token here
-          await firebaseService.updatePushToken(user.id, 'web-push-token-' + Math.random().toString(36).substr(2, 9));
+      // Try native first
+      if (typeof window !== 'undefined' && 'Notification' in window) {
+        const granted = await notificationService.requestPermission();
+        if (granted) {
+          setNotificationsEnabled(true);
+          notificationService.setFallbackEnabled(false);
+          if (user) {
+            await firebaseService.updatePushToken(user.id, 'web-push-token-' + Math.random().toString(36).substr(2, 9));
+          }
+          return;
         }
       }
+
+      // If native fails or is not supported, enable fallback
+      notificationService.setFallbackEnabled(true);
+      setNotificationsEnabled(true);
+      alert('Native browser notifications are unavailable in this environment. Expenso will use in-app alerts instead.');
+      triggerHaptic(20);
     } else {
-      // Web notifications can't be programmatically revoked easily, 
-      // but we can track the user's preference in our app state/DB.
       setNotificationsEnabled(false);
+      notificationService.setFallbackEnabled(false);
     }
   };
 
@@ -1401,12 +1617,17 @@ const ProfilePage = ({ transactions }: { transactions: any[] }) => {
 
   const handleSaveProfile = async () => {
     if (!user) return;
+    setIsSavingProfile(true);
     try {
       await firebaseService.updateUserProfile(user.id, profile);
       setIsEditing(false);
       triggerHaptic([10, 30, 10]);
-    } catch (err) {
+      alert('Profile updated successfully!');
+    } catch (err: any) {
       console.error(err);
+      alert('Failed to update profile: ' + (err.message || 'Unknown error'));
+    } finally {
+      setIsSavingProfile(false);
     }
   };
 
@@ -1431,6 +1652,31 @@ const ProfilePage = ({ transactions }: { transactions: any[] }) => {
     triggerHaptic([10, 20, 10]);
     await loadProfile();
     setIsRefreshing(false);
+  };
+
+  const handleExportData = () => {
+    triggerHaptic([10, 50, 10]);
+    const headers = ['Date', 'Description', 'Category', 'Type', 'Amount'];
+    const csvContent = [
+      headers.join(','),
+      ...transactions.map(t => [
+        t.date,
+        `"${t.description.replace(/"/g, '""')}"`,
+        t.category,
+        t.type,
+        t.amount
+      ].join(','))
+    ].join('\n');
+
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const link = document.createElement('a');
+    const url = URL.createObjectURL(blob);
+    link.setAttribute('href', url);
+    link.setAttribute('download', `expenso_export_${format(new Date(), 'yyyy_MM_dd')}.csv`);
+    link.style.visibility = 'hidden';
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
   };
 
   const avatars = [
@@ -1526,7 +1772,7 @@ const ProfilePage = ({ transactions }: { transactions: any[] }) => {
           <motion.div 
             initial={{ scale: 0 }}
             animate={{ scale: 1 }}
-            className="absolute -bottom-1 -right-1 w-8 h-8 bg-indigo-600 rounded-full border-4 border-[#050505] flex items-center justify-center text-white"
+            className="absolute -bottom-1 -right-1 w-8 h-8 bg-primary rounded-full border-4 border-[#050505] flex items-center justify-center text-white"
           >
             <Crown size={14} fill="currentColor" />
           </motion.div>
@@ -1540,25 +1786,36 @@ const ProfilePage = ({ transactions }: { transactions: any[] }) => {
                 value={profile.displayName}
                 onChange={(e) => setProfile(prev => ({ ...prev, displayName: e.target.value }))}
                 placeholder="Display Name"
-                className="w-full bg-white/5 border border-indigo-500/30 rounded-2xl px-4 py-3 text-white text-center outline-none focus:border-indigo-500 transition-all"
+                className={cn(
+                  "w-full bg-white/5 border rounded-2xl px-4 py-3 text-white text-center outline-none transition-all",
+                  isDark ? "border-primary/30 focus:border-primary" : "border-slate-200 focus:border-primary"
+                )}
               />
               <input 
                 type="text"
                 value={profile.phoneNumber}
                 onChange={(e) => setProfile(prev => ({ ...prev, phoneNumber: e.target.value }))}
                 placeholder="Phone Number"
-                className="w-full bg-white/5 border border-indigo-500/30 rounded-2xl px-4 py-3 text-white text-center outline-none focus:border-indigo-500 transition-all"
+                className={cn(
+                  "w-full bg-white/5 border rounded-2xl px-4 py-3 text-white text-center outline-none transition-all",
+                  isDark ? "border-primary/30 focus:border-primary" : "border-slate-200 focus:border-primary"
+                )}
               />
               <textarea 
                 value={profile.bio}
                 onChange={(e) => setProfile(prev => ({ ...prev, bio: e.target.value }))}
                 placeholder="Add a short bio..."
-                className="w-full bg-white/5 border border-indigo-500/30 rounded-2xl px-4 py-3 text-white text-center outline-none focus:border-indigo-500 transition-all resize-none h-20"
+                className={cn(
+                  "w-full bg-white/5 border rounded-2xl px-4 py-3 text-white text-center outline-none transition-all resize-none h-20",
+                  isDark ? "border-primary/30 focus:border-primary" : "border-slate-200 focus:border-primary"
+                )}
               />
-              <div className="flex gap-3">
-                <Button variant="ghost" className="flex-1" onClick={() => setIsEditing(false)}>Cancel</Button>
-                <Button variant="gradient" className="flex-1" onClick={handleSaveProfile}>Save Changes</Button>
-              </div>
+                <div className="flex gap-3">
+                  <Button variant="ghost" className="flex-1" onClick={() => setIsEditing(false)} disabled={isSavingProfile}>Cancel</Button>
+                  <Button variant="gradient" className="flex-1" onClick={handleSaveProfile} disabled={isSavingProfile}>
+                    {isSavingProfile ? 'Saving...' : 'Save Changes'}
+                  </Button>
+                </div>
             </div>
           ) : (
             <>
@@ -1566,16 +1823,20 @@ const ProfilePage = ({ transactions }: { transactions: any[] }) => {
                 {profile.displayName || user?.email?.split('@')[0]}
               </h3>
               {profile.bio && <p className="text-slate-400 text-sm max-w-xs mx-auto">{profile.bio}</p>}
-              <div className="flex items-center justify-center gap-3">
-                <div className="inline-flex items-center gap-1.5 px-3 py-1 bg-indigo-500/10 border border-indigo-500/20 rounded-full backdrop-blur-md">
-                  <Zap size={12} className="text-indigo-500" fill="currentColor" />
-                  <span className="text-[10px] font-bold text-indigo-500 uppercase tracking-widest">Premium Member</span>
+              <div className="flex flex-col items-center justify-center gap-4 pt-2">
+                <div className="inline-flex items-center gap-1.5 px-3 py-1 bg-primary/10 border border-primary/20 rounded-full backdrop-blur-md">
+                  <Zap size={12} className="text-primary" fill="currentColor" />
+                  <span className="text-[10px] font-bold text-primary uppercase tracking-widest">Premium Member</span>
                 </div>
                 <button 
-                  onClick={() => setIsEditing(true)}
-                  className="p-2 bg-white/5 rounded-full text-slate-400 hover:text-white transition-colors"
+                  onClick={() => { triggerHaptic(10); setIsEditing(true); }}
+                  className={cn(
+                    "flex items-center gap-2 px-6 py-2.5 rounded-2xl font-bold text-xs uppercase tracking-widest transition-all active:scale-95",
+                    isDark ? "bg-white/5 text-slate-300 hover:bg-white/10 border border-white/5" : "bg-slate-100 text-slate-600 hover:bg-slate-200 border border-slate-200"
+                  )}
                 >
                   <Edit2 size={14} />
+                  Edit Profile
                 </button>
               </div>
             </>
@@ -1589,12 +1850,14 @@ const ProfilePage = ({ transactions }: { transactions: any[] }) => {
             <p className="text-[10px] text-slate-500 font-bold uppercase tracking-widest">Transactions</p>
           </div>
           <div className={cn("text-center space-y-1 border-x", isDark ? "border-white/5" : "border-slate-100")}>
-            <p className={cn("text-xl font-bold", isDark ? "text-white" : "text-slate-900")}>{savingsRate}%</p>
-            <p className="text-[10px] text-slate-500 font-bold uppercase tracking-widest">Savings Rate</p>
+            <PrivacyMask>
+              <p className={cn("text-xl font-bold", isDark ? "text-white" : "text-slate-900")}>{formatAmount(income - expenses)}</p>
+            </PrivacyMask>
+            <p className="text-[10px] text-slate-500 font-bold uppercase tracking-widest">Net Worth</p>
           </div>
           <div className="text-center space-y-1">
-            <p className={cn("text-xl font-bold", isDark ? "text-white" : "text-slate-900")}>128</p>
-            <p className="text-[10px] text-slate-500 font-bold uppercase tracking-widest">AI Queries</p>
+            <p className={cn("text-xl font-bold", isDark ? "text-white" : "text-slate-900")}>{savingsRate}%</p>
+            <p className="text-[10px] text-slate-500 font-bold uppercase tracking-widest">Savings Rate</p>
           </div>
         </div>
       </div>
@@ -1610,9 +1873,66 @@ const ProfilePage = ({ transactions }: { transactions: any[] }) => {
           />
           <SettingRow icon={CreditCard} label="Connected Bank" value="HDFC Bank •••• 4242" />
           <SettingRow icon={Crown} label="Subscription" value="Premium Plan • Active" color="text-amber-500" />
+          <SettingRow icon={Download} label="Export Data" value="CSV Format" onClick={handleExportData} />
         </SettingGroup>
 
-        <SettingGroup title="Preferences">
+        <SettingGroup title="Security">
+          <SettingRow 
+            icon={Lock} 
+            label="Security Lock" 
+            value={securityLockEnabled ? "Enabled" : "Disabled"}
+            rightContent={
+              <button 
+                onClick={(e) => { 
+                  e.stopPropagation(); 
+                  triggerHaptic(15); 
+                  if (!securityLockEnabled && !pinCode) {
+                    setIsPinModalOpen(true);
+                  } else {
+                    setSecurityLockEnabled(!securityLockEnabled);
+                  }
+                }}
+                className={cn(
+                  "w-10 h-5 rounded-full transition-all relative",
+                  securityLockEnabled ? "bg-primary" : "bg-slate-700"
+                )}
+              >
+                <motion.div 
+                  animate={{ x: securityLockEnabled ? 22 : 2 }}
+                  className="absolute top-1 w-3 h-3 bg-white rounded-full shadow-sm" 
+                />
+              </button>
+            }
+          />
+          {securityLockEnabled && (
+            <SettingRow 
+              icon={ShieldAlert} 
+              label="Change PIN" 
+              value="4-digit code" 
+              onClick={() => setIsPinModalOpen(true)} 
+            />
+          )}
+        </SettingGroup>
+
+        <SettingGroup title="Appearance Lab">
+          <div className="p-4 space-y-4">
+            <p className="text-[10px] text-slate-500 font-bold uppercase tracking-widest">Accent Color</p>
+            <div className="flex gap-4">
+              {(['indigo', 'emerald', 'rose'] as const).map((color) => (
+                <button
+                  key={color}
+                  onClick={() => { triggerHaptic(10); setAccentColor(color); }}
+                  className={cn(
+                    "w-12 h-12 rounded-2xl transition-all flex items-center justify-center",
+                    accentColor === color ? "ring-2 ring-white ring-offset-2 ring-offset-[#050505]" : "opacity-50"
+                  )}
+                  style={{ backgroundColor: color === 'indigo' ? '#6366f1' : color === 'emerald' ? '#10b981' : '#f43f5e' }}
+                >
+                  {accentColor === color && <Check size={20} className="text-white" />}
+                </button>
+              ))}
+            </div>
+          </div>
           <SettingRow 
             icon={theme === 'dark' ? Moon : Sun} 
             label="Dark Mode" 
@@ -1621,7 +1941,7 @@ const ProfilePage = ({ transactions }: { transactions: any[] }) => {
                 onClick={(e) => { e.stopPropagation(); triggerHaptic(15); toggleTheme(); }}
                 className={cn(
                   "w-10 h-5 rounded-full transition-all relative",
-                  theme === 'dark' ? "bg-indigo-600" : "bg-slate-700"
+                  theme === 'dark' ? "bg-primary" : "bg-slate-700"
                 )}
               >
                 <motion.div 
@@ -1631,6 +1951,9 @@ const ProfilePage = ({ transactions }: { transactions: any[] }) => {
               </button>
             }
           />
+        </SettingGroup>
+
+        <SettingGroup title="Preferences">
           <SettingRow 
             icon={DollarSign} 
             label="Currency" 
@@ -1641,7 +1964,7 @@ const ProfilePage = ({ transactions }: { transactions: any[] }) => {
           <SettingRow 
             icon={DollarSign} 
             label="Weekly Budget" 
-            value={currency === 'INR' ? `₹${weeklyBudget}` : `$${weeklyBudget}`} 
+            value={formatAmount(weeklyBudget)} 
             onClick={() => {
               setTempBudget(weeklyBudget.toString());
               setIsBudgetModalOpen(true);
@@ -1655,7 +1978,7 @@ const ProfilePage = ({ transactions }: { transactions: any[] }) => {
                 onClick={(e) => { e.stopPropagation(); handleToggleNotifications(); }}
                 className={cn(
                   "w-10 h-5 rounded-full transition-all relative",
-                  notificationsEnabled ? "bg-indigo-600" : "bg-slate-700"
+                  notificationsEnabled ? "bg-primary" : "bg-slate-700"
                 )}
               >
                 <motion.div 
@@ -1668,6 +1991,25 @@ const ProfilePage = ({ transactions }: { transactions: any[] }) => {
         </SettingGroup>
 
         <SettingGroup title="AI Settings">
+          <div className="p-4 space-y-4">
+            <p className="text-[10px] text-slate-500 font-bold uppercase tracking-widest">AI Personality</p>
+            <div className="flex flex-wrap gap-2">
+              {(['Professional', 'Strict Coach', 'Sarcastic Friend'] as const).map((p) => (
+                <button
+                  key={p}
+                  onClick={() => { triggerHaptic(10); setAiPersonality(p); }}
+                  className={cn(
+                    "px-4 py-2 rounded-xl text-xs font-bold transition-all border",
+                    aiPersonality === p 
+                      ? "bg-primary border-primary text-white" 
+                      : "bg-white/5 border-white/10 text-slate-400"
+                  )}
+                >
+                  {p}
+                </button>
+              ))}
+            </div>
+          </div>
           <SettingRow icon={Brain} label="Thinking Level" value="High Reasoning" color="text-purple-500" />
           <SettingRow icon={Mic} label="AI Voice" value="Zephyr (Male)" />
           <SettingRow icon={Trash} label="Clear AI History" isRed />
@@ -1705,7 +2047,7 @@ const ProfilePage = ({ transactions }: { transactions: any[] }) => {
                 isDark ? "bg-[#050505] border-white/10" : "bg-white border-slate-200"
               )}
             >
-              <div className="w-16 h-16 bg-indigo-500/10 rounded-3xl flex items-center justify-center text-indigo-500 mx-auto mb-6">
+              <div className="w-16 h-16 bg-primary/10 rounded-3xl flex items-center justify-center text-primary mx-auto mb-6">
                 <DollarSign size={32} strokeWidth={1.5} />
               </div>
               <h3 className={cn("text-xl font-bold text-center mb-2", isDark ? "text-white" : "text-slate-900")}>Weekly Budget</h3>
@@ -1722,7 +2064,7 @@ const ProfilePage = ({ transactions }: { transactions: any[] }) => {
                   value={tempBudget}
                   onChange={(e) => setTempBudget(e.target.value)}
                   className={cn(
-                    "w-full pl-10 pr-4 py-4 rounded-2xl border font-bold text-lg outline-none focus:ring-2 focus:ring-indigo-500 transition-all",
+                    "w-full pl-10 pr-4 py-4 rounded-2xl border font-bold text-lg outline-none focus:ring-2 focus:ring-primary transition-all",
                     isDark ? "bg-white/5 border-white/10 text-white" : "bg-slate-50 border-slate-200 text-slate-900"
                   )}
                   placeholder="Enter amount"
@@ -1738,12 +2080,83 @@ const ProfilePage = ({ transactions }: { transactions: any[] }) => {
                       setIsBudgetModalOpen(false);
                     }
                   }}
-                  className="w-full py-4 bg-indigo-600 hover:bg-indigo-700 text-white font-bold rounded-2xl transition-all active:scale-95"
+                  className="w-full py-4 bg-primary hover:bg-primary/80 text-white font-bold rounded-2xl transition-all active:scale-95"
                 >
                   Save Budget
                 </button>
                 <button 
                   onClick={() => setIsBudgetModalOpen(false)}
+                  className={cn(
+                    "w-full py-4 font-bold rounded-2xl transition-all",
+                    isDark ? "bg-white/5 text-slate-300 hover:bg-white/10" : "bg-slate-100 text-slate-600 hover:bg-slate-200"
+                  )}
+                >
+                  Cancel
+                </button>
+              </div>
+            </motion.div>
+          </>
+        )}
+      </AnimatePresence>
+
+      {/* PIN Setup Modal */}
+      <AnimatePresence>
+        {isPinModalOpen && (
+          <>
+            <motion.div 
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              onClick={() => setIsPinModalOpen(false)}
+              className="fixed inset-0 bg-black/60 backdrop-blur-sm z-[100]"
+            />
+            <motion.div
+              initial={{ scale: 0.9, opacity: 0, y: 20 }}
+              animate={{ scale: 1, opacity: 1, y: 0 }}
+              exit={{ scale: 0.9, opacity: 0, y: 20 }}
+              className={cn(
+                "fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[90%] max-w-sm border rounded-[32px] p-8 z-[101] shadow-2xl transition-colors",
+                isDark ? "bg-[#050505] border-white/10" : "bg-white border-slate-200"
+              )}
+            >
+              <div className="w-16 h-16 bg-primary/10 rounded-3xl flex items-center justify-center text-primary mx-auto mb-6">
+                <Lock size={32} strokeWidth={1.5} />
+              </div>
+              <h3 className={cn("text-xl font-bold text-center mb-2", isDark ? "text-white" : "text-slate-900")}>Set Security PIN</h3>
+              <p className="text-slate-500 text-center text-sm mb-8 leading-relaxed">
+                Enter a 4-digit PIN to secure your financial data.
+              </p>
+              
+              <div className="relative mb-8">
+                <input 
+                  type="text"
+                  maxLength={4}
+                  value={tempPin}
+                  onChange={(e) => setTempPin(e.target.value.replace(/\D/g, ''))}
+                  className={cn(
+                    "w-full px-4 py-4 rounded-2xl border font-bold text-2xl text-center tracking-[1em] outline-none focus:ring-2 focus:ring-primary transition-all",
+                    isDark ? "bg-white/5 border-white/10 text-white" : "bg-slate-50 border-slate-200 text-slate-900"
+                  )}
+                  placeholder="••••"
+                />
+              </div>
+
+              <div className="flex flex-col gap-3">
+                <button 
+                  onClick={() => {
+                    if (tempPin.length === 4) {
+                      setPinCode(tempPin);
+                      setSecurityLockEnabled(true);
+                      setIsPinModalOpen(false);
+                      triggerHaptic([10, 50, 10]);
+                    }
+                  }}
+                  className="w-full py-4 bg-primary hover:bg-primary/80 text-white font-bold rounded-2xl transition-all active:scale-95"
+                >
+                  Save PIN
+                </button>
+                <button 
+                  onClick={() => setIsPinModalOpen(false)}
                   className={cn(
                     "w-full py-4 font-bold rounded-2xl transition-all",
                     isDark ? "bg-white/5 text-slate-300 hover:bg-white/10" : "bg-slate-100 text-slate-600 hover:bg-slate-200"
@@ -1839,7 +2252,7 @@ const ProfilePage = ({ transactions }: { transactions: any[] }) => {
                     onClick={() => handleAvatarSelect(avatar.name)}
                     className={cn(
                       "aspect-square rounded-3xl flex flex-col items-center justify-center gap-2 transition-all",
-                      profile.avatar === avatar.name ? "bg-indigo-600/20 border-2 border-indigo-500" : "bg-white/5 border border-white/5"
+                      profile.avatar === avatar.name ? "bg-primary/20 border-2 border-primary" : "bg-white/5 border border-white/5"
                     )}
                   >
                     <avatar.icon size={28} className={avatar.color} />
@@ -1873,11 +2286,13 @@ export default function App() {
   const [activeTab, setActiveTab] = useState('dashboard');
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
   const [isAiOpen, setIsAiOpen] = useState(false);
+  const [activeToast, setActiveToast] = useState<{ title: string, body: string } | null>(null);
+  const [isLocked, setIsLocked] = useState(true);
+  const { securityLockEnabled, aiPersonality, weeklyBudget, formatAmount, currency } = useSettings();
   const [transactions, setTransactions] = useState<any[]>([]);
   const [deletingId, setDeletingId] = useState<string | null>(null);
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
   const [transactionToDelete, setTransactionToDelete] = useState<string | null>(null);
-  const { weeklyBudget } = useSettings();
   const [budgetInsight, setBudgetInsight] = useState('');
   const [hasUnreadNotifications, setHasUnreadNotifications] = useState(false);
 
@@ -1903,7 +2318,16 @@ export default function App() {
   }, [user, weeklyBudget]);
 
   useEffect(() => {
-    if (budgetInsight && budgetInsight.includes('Heads up') || budgetInsight.includes('warning')) {
+    const handleNotificationEvent = (e: any) => {
+      setActiveToast(e.detail);
+      setTimeout(() => setActiveToast(null), 4000);
+    };
+    window.addEventListener('expenso-notification', handleNotificationEvent);
+    return () => window.removeEventListener('expenso-notification', handleNotificationEvent);
+  }, []);
+
+  useEffect(() => {
+    if (budgetInsight && (budgetInsight.includes('Heads up') || budgetInsight.includes('warning'))) {
       setHasUnreadNotifications(true);
       notificationService.sendLocalNotification('⚠️ Budget Alert', budgetInsight);
     }
@@ -1916,7 +2340,7 @@ export default function App() {
       setTransactions(data);
       
       // Fetch budget insight
-      const insight = await getBudgetInsight(data, weeklyBudget);
+      const insight = await getBudgetInsight(data, weeklyBudget, aiPersonality, currency);
       setBudgetInsight(insight);
     } catch (err) {
       console.error(err);
@@ -1926,6 +2350,7 @@ export default function App() {
   const handleAddTransaction = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!user) return;
+    triggerHaptic([10, 50, 10]);
     try {
       await firebaseService.addTransaction(user.id, {
         amount: parseFloat(amount),
@@ -1935,7 +2360,7 @@ export default function App() {
         description
       });
       
-      notificationService.sendLocalNotification('Transaction Added', `Successfully added ${category} expense of ${parseFloat(amount)}`);
+      notificationService.sendLocalNotification('Transaction Added', `Successfully added ${category} ${type} of ${formatAmount(parseFloat(amount))}`);
       
       setIsAddModalOpen(false);
       setAmount('');
@@ -1994,7 +2419,41 @@ export default function App() {
       className="min-h-screen flex flex-col transition-colors duration-300"
       style={{ backgroundColor: colors.bg }}
     >
+      <AnimatePresence>
+        {securityLockEnabled && isLocked && (
+          <PinCodeOverlay onUnlock={() => setIsLocked(false)} />
+        )}
+      </AnimatePresence>
+
       <StickyHeader hasUnreadNotifications={hasUnreadNotifications} />
+      
+      {/* Toast Notification */}
+      <AnimatePresence>
+        {activeToast && (
+          <motion.div
+            initial={{ y: -100, opacity: 0 }}
+            animate={{ y: 20, opacity: 1 }}
+            exit={{ y: -100, opacity: 0 }}
+            className="fixed top-20 left-6 right-6 z-[100] flex justify-center pointer-events-none"
+          >
+            <div className={cn(
+              "max-w-md w-full glass p-4 rounded-2xl border shadow-2xl flex items-start gap-4 pointer-events-auto",
+              isDark ? "bg-primary/20 border-primary/30" : "bg-white border-primary/10"
+            )}>
+              <div className="w-10 h-10 bg-primary rounded-xl flex items-center justify-center text-white shrink-0">
+                <Bell size={20} fill="currentColor" />
+              </div>
+              <div className="flex-1">
+                <h4 className={cn("text-sm font-bold", isDark ? "text-white" : "text-slate-900")}>{activeToast.title}</h4>
+                <p className="text-xs text-slate-500 mt-1 leading-relaxed">{activeToast.body}</p>
+              </div>
+              <button onClick={() => setActiveToast(null)} className="text-slate-400 hover:text-white transition-colors">
+                <X size={16} />
+              </button>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
       
       {/* Main Content */}
       <main className="flex-1 max-w-2xl mx-auto w-full p-6 md:p-8">
@@ -2031,7 +2490,7 @@ export default function App() {
         whileHover={{ scale: 1.1 }}
         whileTap={{ scale: 0.9 }}
         onClick={() => setIsAiOpen(true)}
-        className="fixed bottom-28 right-6 w-14 h-14 bg-indigo-600 rounded-2xl flex items-center justify-center text-white shadow-2xl shadow-indigo-500/40 z-40"
+        className="fixed bottom-28 right-6 w-14 h-14 bg-primary rounded-2xl flex items-center justify-center text-white shadow-2xl shadow-primary/40 z-40"
       >
         <MessageSquare size={24} strokeWidth={1.2} />
       </motion.button>
@@ -2046,7 +2505,7 @@ export default function App() {
             <button
               key={tab.id}
               onClick={() => setIsAddModalOpen(true)}
-              className="w-16 h-16 -mt-12 bg-indigo-600 rounded-2xl flex items-center justify-center text-white shadow-xl shadow-indigo-500/40 active:scale-90 transition-transform"
+              className="w-16 h-16 -mt-12 bg-primary rounded-2xl flex items-center justify-center text-white shadow-xl shadow-primary/40 active:scale-90 transition-transform"
             >
               <Plus size={32} strokeWidth={1.5} />
             </button>
