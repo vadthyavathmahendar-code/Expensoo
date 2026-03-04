@@ -8,8 +8,18 @@ const projects = [
     title: "Civic Connect",
     description:
       "A community engagement platform that empowers citizens to report local issues, participate in community decisions, and connect with local governance. Features real-time updates, interactive maps, and a robust discussion forum.",
-    techStack: ["React", "Node.js", "Express", "MongoDB"],
-    github: "#",
+    techStack: ["React", "Node.js", "Express", "Supabase"],
+    github: "https://github.com/vadthyavathmahendar-code/ccgovt",
+    demo: "https://ccgovt-2026.vercel.app/",
+    featured: true,
+  },
+
+  {
+    title: "Expenso",
+    description:
+      "A privacy-focused personal finance manager that enables users to track daily expenses, set budget limits, and visualize spending patterns. Features secure data synchronization, encrypted local storage, and automated monthly financial summaries.",
+    techStack: ["React Native", "Firebase", "Node.js", "Context API"],
+    github: "https://github.com/vadthyavathmahendar-code/Expensoo",
     demo: "#",
     featured: true,
   },
@@ -42,16 +52,15 @@ function ProjectCard({
       ref={cardRef}
       onMouseMove={handleMouseMove}
       onMouseLeave={handleMouseLeave}
-      className={`glass group relative overflow-hidden rounded-2xl p-8 transition-all duration-500 hover:border-primary/30 ${
-        isVisible ? "translate-y-0 opacity-100" : "translate-y-12 opacity-0"
-      }`}
+      className={`glass group relative overflow-hidden rounded-2xl p-8 transition-all duration-500 hover:border-primary/30 ${isVisible ? "translate-y-0 opacity-100" : "translate-y-12 opacity-0"
+        }`}
       style={{
         transitionDelay: `${index * 200}ms`,
         transform: `perspective(1000px) rotateX(${tilt.x}deg) rotateY(${tilt.y}deg)`,
       }}
     >
       {/* Hover glow */}
-      <div className="pointer-events-none absolute -inset-px rounded-2xl bg-gradient-to-r from-primary/0 via-primary/5 to-accent/0 opacity-0 transition-opacity duration-500 group-hover:opacity-100" />
+      <div className="pointer-events-none absolute -inset-px rounded-2xl bg-linear-to-r from-primary/0 via-primary/5 to-accent/0 opacity-0 transition-opacity duration-500 group-hover:opacity-100" />
 
       <div className="relative z-10">
         {project.featured && (
@@ -119,14 +128,13 @@ export function ProjectsSection() {
     <section id="projects" className="relative px-6 py-24" ref={sectionRef}>
       <div className="mx-auto max-w-4xl">
         <div
-          className={`mb-16 text-center transition-all duration-700 ${
-            isVisible ? "translate-y-0 opacity-100" : "translate-y-8 opacity-0"
-          }`}
+          className={`mb-16 text-center transition-all duration-700 ${isVisible ? "translate-y-0 opacity-100" : "translate-y-8 opacity-0"
+            }`}
         >
           <h2 className="mb-4 text-3xl font-bold text-foreground md:text-4xl">
             My <span className="text-gradient">Projects</span>
           </h2>
-          <div className="mx-auto h-1 w-20 rounded-full bg-gradient-to-r from-primary to-accent" />
+          <div className="mx-auto h-1 w-20 rounded-full bg-linear-to-r from-primary to-accent" />
           <p className="mx-auto mt-4 max-w-lg text-muted-foreground">
             Showcasing real-world applications I have built from the ground up.
           </p>
