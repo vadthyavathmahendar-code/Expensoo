@@ -189,9 +189,9 @@ export function ContactSection() {
 
               <div className="flex flex-col gap-4">
                 {[
-                  { icon: Mail, href: "mailto:vadthyavathmahendar@gmail.com", text: "vadthyavathmahendar@gmial.com" },
-                  { icon: Github, href: "https://github.com/vadthyavathmahendar-code", text: "https://github.com/vadthyavathmahendar-code" },
-                  { icon: Linkedin, href: "https://linkedin.com", text: "linkedin.com/in/mahi" },
+                  { icon: Mail, href: "mailto:vadthyavathmahendar@gmail.com", text: "vadthyavathmahendar@gmail.com" },
+                  { icon: Github, href: "https://github.com/vadthyavathmahendar-code", text: "github.com/vadthyavathmahendar-code" },
+                  { icon: Linkedin, href: "https://www.linkedin.com/in/vadthyavath-mahendar-2590073a0", text: "linkedin.com/in/vadthyavath-mahendar" },
                 ].map((item, index) => (
                   <MagneticButton
                     key={item.text}
